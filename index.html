@@ -1,0 +1,1470 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>แบบทดสอบคณิตศาสตร์ - การคูณเลขสามหลักคูณกับเลขหนึ่งหลัก</title>
+  <style>
+    :root {
+      --purple: #6b5cf4;
+      --blue: #35a8f6;
+      --yellow-soft: #fff8cf;
+      --green: #08a94d;
+      --green-soft: #d9f9e6;
+      --red: #ed3851;
+      --red-soft: #ffe0e5;
+      --ink: #26314c;
+      --muted: #71809a;
+      --number-font: "Courier New", Courier, monospace;
+      --shadow: 0 14px 30px rgba(65, 70, 135, 0.16);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      padding: 16px 12px 22px;
+      color: var(--ink);
+      font-family: Tahoma, "Noto Sans Thai", Arial, sans-serif;
+      background:
+        radial-gradient(circle at 8% 10%, rgba(255, 217, 83, 0.42), transparent 25%),
+        radial-gradient(circle at 92% 12%, rgba(54, 168, 245, 0.22), transparent 27%),
+        linear-gradient(135deg, #edf8ff 0%, #f8f0ff 52%, #ecfff8 100%);
+    }
+
+    .app {
+      width: min(100%, 1040px);
+      margin: 0 auto;
+    }
+
+    /* Header */
+    .app-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 15px;
+      padding: 17px 21px;
+      border-radius: 25px;
+      color: #fff;
+      background: linear-gradient(135deg, #6656f5 0%, #5c78f6 55%, #2dbbdc 100%);
+      box-shadow: 0 15px 32px rgba(75, 85, 191, 0.28);
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      flex: 1;
+      min-width: 0;
+    }
+
+    .multiply-icon {
+      flex: 0 0 auto;
+      display: grid;
+      place-items: center;
+      width: 58px;
+      height: 58px;
+      border-radius: 18px;
+      color: #5646cd;
+      background: #fff3a5;
+      box-shadow: inset 0 -4px 0 rgba(107, 84, 0, 0.13);
+      font: 900 40px/1 var(--number-font);
+    }
+
+    .header-copy {
+      min-width: 0;
+    }
+
+    .header-small {
+      margin-bottom: 2px;
+      font-size: 0.86rem;
+      font-weight: 700;
+      opacity: 0.94;
+    }
+
+    .header-title {
+      margin: 0;
+      font-size: clamp(1rem, 2.8vw, 1.35rem);
+      line-height: 1.35;
+      font-weight: 900;
+    }
+
+    .progress-row {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      margin-top: 9px;
+      font-size: 0.84rem;
+      font-weight: 900;
+    }
+
+    .progress-track {
+      width: min(190px, 25vw);
+      height: 9px;
+      overflow: hidden;
+      border-radius: 99px;
+      background: rgba(255, 255, 255, 0.34);
+    }
+
+    .progress-fill {
+      width: 0%;
+      height: 100%;
+      border-radius: inherit;
+      background: #fff1a4;
+      transition: width 0.35s ease;
+    }
+
+    .score-box {
+      flex: 0 0 auto;
+      padding: 12px 15px;
+      border-radius: 17px;
+      color: #5142c8;
+      background: #fff;
+      box-shadow: 0 5px 13px rgba(47, 54, 137, 0.17);
+      font-size: 1rem;
+      font-weight: 900;
+      white-space: nowrap;
+    }
+
+    main {
+      margin-top: 18px;
+    }
+
+    .card {
+      border: 1px solid rgba(113, 123, 186, 0.12);
+      border-radius: 28px;
+      background: rgba(255, 255, 255, 0.95);
+      box-shadow: var(--shadow);
+    }
+
+    /* Start / Summary */
+    .start-card,
+    .summary-card {
+      width: min(100%, 650px);
+      margin: 0 auto;
+      padding: 34px 25px;
+      text-align: center;
+    }
+
+    .start-emoji,
+    .summary-emoji {
+      margin-bottom: 10px;
+      font-size: 3.25rem;
+    }
+
+    .start-card h2,
+    .summary-card h2 {
+      margin: 0 0 8px;
+      color: #44389a;
+      font-size: clamp(1.45rem, 5vw, 2rem);
+    }
+
+    .start-card p,
+    .summary-card p {
+      margin: 0;
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    .settings {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 15px;
+      margin-top: 25px;
+      text-align: left;
+    }
+
+    .setting-box {
+      padding: 15px;
+      border-radius: 18px;
+      background: #f4f6ff;
+    }
+
+    .setting-box label {
+      display: block;
+      margin-bottom: 10px;
+      color: #505883;
+      font-size: 0.9rem;
+      font-weight: 900;
+    }
+
+    .difficulty-buttons,
+    .time-buttons {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 9px;
+    }
+
+    .difficulty-button,
+    .time-button {
+      min-height: 66px;
+      padding: 8px 6px;
+      border: 2px solid #d9ddff;
+      border-radius: 15px;
+      color: #555d84;
+      background: #fff;
+      box-shadow: 0 3px 0 rgba(104, 112, 177, 0.1);
+      cursor: pointer;
+      font-family: inherit;
+      transition: 0.15s ease;
+      touch-action: manipulation;
+    }
+
+    .difficulty-button:hover,
+    .time-button:hover {
+      transform: translateY(-2px);
+      border-color: #a49bff;
+    }
+
+    .difficulty-button.selected,
+    .time-button.selected {
+      border-color: var(--purple);
+      color: #fff;
+      background: linear-gradient(135deg, #6c5df4, #37a7ed);
+      box-shadow: 0 5px 0 rgba(72, 59, 185, 0.25);
+    }
+
+    .difficulty-name {
+      display: block;
+      margin-bottom: 3px;
+      font-size: 0.92rem;
+      font-weight: 900;
+    }
+
+    .difficulty-range {
+      display: block;
+      font: 900 0.72rem/1.3 var(--number-font);
+    }
+
+    .time-button {
+      min-height: 54px;
+      font: 900 0.88rem/1.15 var(--number-font);
+    }
+
+    .time-and-sound {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .sound-button {
+      width: 100%;
+      min-height: 54px;
+      padding: 8px 10px;
+      border: 2px solid #cfdbff;
+      border-radius: 14px;
+      color: #3e529a;
+      background: #fff;
+      box-shadow: 0 3px 0 rgba(80, 100, 173, 0.12);
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 0.95rem;
+      font-weight: 900;
+      transition: 0.15s ease;
+      touch-action: manipulation;
+    }
+
+    .sound-button:hover {
+      transform: translateY(-2px);
+      background: #eef6ff;
+    }
+
+    .sound-button.off {
+      color: #a34554;
+      border-color: #ffcbd1;
+      background: #fff3f4;
+    }
+
+    /* Game */
+    .game-card {
+      padding: 18px clamp(13px, 3vw, 30px) 22px;
+    }
+
+    .game-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 7px;
+    }
+
+    .question-label {
+      padding: 8px 13px;
+      border-radius: 99px;
+      color: #5142d7;
+      background: #eeebff;
+      font-size: 0.95rem;
+      font-weight: 900;
+    }
+
+    .timer {
+      padding: 8px 13px;
+      border-radius: 99px;
+      color: #287399;
+      background: #e6f7ff;
+      font: 900 1.05rem/1 var(--number-font);
+    }
+
+    .timer.warning {
+      color: #c81831;
+      background: #ffe4e8;
+      animation: timerPulse 0.85s infinite alternate;
+    }
+
+    @keyframes timerPulse {
+      from { transform: scale(1); }
+      to { transform: scale(1.06); }
+    }
+
+    .step-text {
+      min-height: 28px;
+      margin: 8px 0 6px;
+      color: #6557ca;
+      text-align: center;
+      font-size: 1rem;
+      font-weight: 900;
+    }
+
+    .game-layout {
+      display: grid;
+      grid-template-columns: minmax(300px, 1fr) 205px;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      max-width: 700px;
+      margin: 0 auto;
+    }
+
+    .math-area {
+      display: flex;
+      justify-content: center;
+      min-width: 0;
+    }
+
+    /* ตารางคงที่: หลักพัน | หลักร้อย | หลักสิบ | หลักหน่วย */
+    .math-grid {
+      display: grid;
+      grid-template-columns: repeat(4, clamp(50px, 9vw, 67px));
+      align-items: center;
+      justify-items: center;
+      row-gap: 7px;
+      font-family: var(--number-font);
+      font-weight: 900;
+    }
+
+    .math-cell {
+      display: grid;
+      place-items: center;
+      width: clamp(46px, 8.6vw, 61px);
+      height: clamp(46px, 8.6vw, 61px);
+      border-radius: 14px;
+      font: 900 clamp(1.65rem, 5vw, 2.25rem)/1 var(--number-font);
+    }
+
+    .number-display {
+      color: #26314c;
+    }
+
+    .operator {
+      color: #6a58eb;
+    }
+
+    .carry-cell {
+      display: grid;
+      place-items: center;
+      width: clamp(39px, 7.5vw, 49px);
+      height: clamp(32px, 6vw, 41px);
+      border: 2px dashed #d5daed;
+      border-radius: 11px;
+      color: #5143cb;
+      background: #fafaff;
+      font: 900 clamp(1.1rem, 3.8vw, 1.4rem)/1 var(--number-font);
+    }
+
+    .carry-space {
+      width: clamp(39px, 7.5vw, 49px);
+      height: clamp(32px, 6vw, 41px);
+      border: 2px solid transparent;
+      border-radius: 11px;
+    }
+
+    .hidden-carry {
+      border-color: transparent;
+      background: transparent;
+    }
+
+    .line {
+      grid-column: 1 / -1;
+      width: 100%;
+      height: 4px;
+      margin: 0 0 2px;
+      border-radius: 99px;
+      background: linear-gradient(90deg, #5c50d8, #30bde1);
+    }
+
+    .answer-cell {
+      border: 2px solid #cfd5e8;
+      color: #28314c;
+      background: #fff;
+      box-shadow: 0 3px 0 rgba(104, 116, 164, 0.1);
+      transition: 0.18s ease;
+    }
+
+    .empty-answer {
+      border-color: transparent;
+      background: transparent;
+      box-shadow: none;
+    }
+
+    .active-cell {
+      z-index: 1;
+      border-color: var(--purple) !important;
+      color: #4e3cd3 !important;
+      background: var(--yellow-soft) !important;
+      box-shadow: 0 0 0 4px rgba(107, 92, 244, 0.14), 0 6px 15px rgba(107, 92, 244, 0.22) !important;
+      animation: activePulse 1s infinite alternate;
+    }
+
+    @keyframes activePulse {
+      from { transform: scale(1); }
+      to { transform: scale(1.055); }
+    }
+
+    .result-correct {
+      border-color: var(--green) !important;
+      color: #008b3c !important;
+      background: var(--green-soft) !important;
+      opacity: 1 !important;
+      animation: none !important;
+    }
+
+    .result-wrong {
+      border-color: var(--red) !important;
+      color: #d91430 !important;
+      background: var(--red-soft) !important;
+      opacity: 1 !important;
+      animation: none !important;
+    }
+
+    .feedback {
+      min-height: 32px;
+      margin: 10px 0 1px;
+      text-align: center;
+      font-size: 1.08rem;
+      font-weight: 900;
+    }
+
+    .feedback.correct {
+      color: #008f40;
+    }
+
+    .feedback.wrong {
+      color: #dc1732;
+    }
+
+    /* Keypad */
+    .keypad {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 7px;
+      padding: 9px;
+      border-radius: 20px;
+      background: linear-gradient(145deg, #edf4ff, #fbf6ff);
+      box-shadow: inset 0 0 0 1px #e0e5fa;
+    }
+
+    .key {
+      min-height: 42px;
+      padding: 5px;
+      border: 0;
+      border-radius: 12px;
+      color: #403981;
+      background: #fff;
+      box-shadow: 0 4px 0 #d9dcef, 0 7px 12px rgba(77, 87, 145, 0.12);
+      cursor: pointer;
+      font: 900 1.18rem/1 var(--number-font);
+      transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease;
+      touch-action: manipulation;
+    }
+
+    .key:hover {
+      background: #fff8cd;
+      transform: translateY(-2px);
+    }
+
+    .key:active {
+      transform: translateY(3px);
+      box-shadow: 0 1px 0 #d9dcef;
+    }
+
+    .delete-key {
+      color: #c32640;
+      background: #fff0f2;
+    }
+
+    .keypad.locked {
+      opacity: 0.58;
+      pointer-events: none;
+    }
+
+    .bottom-controls {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin: 17px auto 0;
+    }
+
+    .main-button,
+    .reset-button {
+      padding: 12px 20px;
+      border: 0;
+      border-radius: 15px;
+      color: #fff;
+      box-shadow: 0 6px 0 rgba(42, 46, 111, 0.2), 0 10px 16px rgba(57, 63, 145, 0.16);
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 0.98rem;
+      font-weight: 900;
+      transition: 0.15s ease;
+      touch-action: manipulation;
+    }
+
+    .main-button {
+      background: linear-gradient(135deg, #6757f4, #469cf2);
+    }
+
+    .reset-button {
+      background: linear-gradient(135deg, #f29d49, #ee6e75);
+    }
+
+    .main-button:hover,
+    .reset-button:hover {
+      transform: translateY(-2px);
+    }
+
+    .main-button:active,
+    .reset-button:active {
+      transform: translateY(3px);
+      box-shadow: 0 2px 0 rgba(42, 46, 111, 0.2);
+    }
+
+    .summary-score {
+      margin: 18px 0 10px;
+      color: #5142d7;
+      font: 900 clamp(2.6rem, 10vw, 4rem)/1 var(--number-font);
+    }
+
+    .credit {
+      margin-top: 19px;
+      color: rgba(68, 82, 122, 0.55);
+      text-align: center;
+      font-size: 0.66rem;
+      line-height: 1.5;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    @media (max-width: 620px) {
+      body {
+        padding: 10px 9px 16px;
+      }
+
+      .app-header {
+        align-items: flex-start;
+        padding: 14px;
+        border-radius: 20px;
+      }
+
+      .header-left {
+        gap: 10px;
+      }
+
+      .multiply-icon {
+        width: 46px;
+        height: 46px;
+        border-radius: 14px;
+        font-size: 31px;
+      }
+
+      .score-box {
+        padding: 9px 10px;
+        font-size: 0.82rem;
+      }
+
+      .progress-track {
+        width: 95px;
+      }
+
+      .game-card {
+        padding: 14px 9px 17px;
+        border-radius: 22px;
+      }
+
+      .game-layout {
+        grid-template-columns: 1fr;
+        gap: 5px;
+      }
+
+      .keypad {
+        width: min(100%, 255px);
+        margin: 0 auto;
+      }
+
+      .key {
+        min-height: 39px;
+        font-size: 1.1rem;
+      }
+    }
+
+    @media (max-width: 430px) {
+      .difficulty-buttons,
+      .time-buttons {
+        gap: 6px;
+      }
+
+      .difficulty-button {
+        min-height: 70px;
+        padding: 7px 3px;
+      }
+
+      .difficulty-name {
+        font-size: 0.8rem;
+      }
+
+      .difficulty-range {
+        font-size: 0.61rem;
+      }
+
+      .time-button {
+        min-height: 52px;
+        padding: 6px 2px;
+        font-size: 0.72rem;
+      }
+
+      .time-and-sound {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 390px) {
+      .header-small {
+        font-size: 0.71rem;
+      }
+
+      .header-title {
+        font-size: 0.82rem;
+      }
+
+      .progress-row {
+        gap: 5px;
+        font-size: 0.7rem;
+      }
+
+      .progress-track {
+        width: 67px;
+      }
+
+      .score-box {
+        padding: 8px;
+        font-size: 0.72rem;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="app">
+    <header class="app-header">
+      <div class="header-left">
+        <div class="multiply-icon">×</div>
+
+        <div class="header-copy">
+          <div class="header-small">แบบทดสอบคณิตศาสตร์</div>
+          <h1 class="header-title">การคูณเลขสามหลักคูณกับเลขหนึ่งหลัก</h1>
+
+          <div class="progress-row">
+            <span id="progressText">ข้อ 0 / 10</span>
+            <div class="progress-track">
+              <div class="progress-fill" id="progressFill"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="score-box" id="scoreText">🏆 คะแนน 0</div>
+    </header>
+
+    <main>
+      <section class="card start-card" id="startScreen">
+        <div class="start-emoji">🧠✨</div>
+        <h2>พร้อมแล้วหรือยัง?</h2>
+        <p>เลือกระดับและเวลา แล้วเริ่มฝึกคูณเลขกันเลย</p>
+
+        <div class="settings">
+          <div class="setting-box">
+            <label>🎯 เลือกระดับความยาก</label>
+
+            <div class="difficulty-buttons">
+              <button class="difficulty-button selected" data-difficulty="easy" type="button">
+                <span class="difficulty-name">ง่าย</span>
+                <span class="difficulty-range">100–499<br>× 1–4</span>
+              </button>
+
+              <button class="difficulty-button" data-difficulty="medium" type="button">
+                <span class="difficulty-name">กลาง</span>
+                <span class="difficulty-range">200–699<br>× 3–6</span>
+              </button>
+
+              <button class="difficulty-button" data-difficulty="hard" type="button">
+                <span class="difficulty-name">ยาก</span>
+                <span class="difficulty-range">500–999<br>× 5–9</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="time-and-sound">
+            <div class="setting-box">
+              <label>⏱ เลือกเวลาแต่ละข้อ</label>
+
+              <div class="time-buttons">
+                <button class="time-button" data-time="30" type="button">30 วินาที</button>
+                <button class="time-button selected" data-time="60" type="button">60 วินาที</button>
+                <button class="time-button" data-time="90" type="button">90 วินาที</button>
+              </div>
+            </div>
+
+            <div class="setting-box">
+              <label>🔔 เสียงประกอบ</label>
+              <button class="sound-button" id="soundButton" type="button">🔊 เปิดเสียง</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="card game-card hidden" id="gameScreen">
+        <div class="game-top">
+          <div class="question-label" id="questionLabel">ข้อ 1</div>
+          <div class="timer" id="timer">⏱ 01:00</div>
+        </div>
+
+        <div class="step-text" id="stepText">✏️ เติมคำตอบตามลำดับ</div>
+
+        <div class="game-layout">
+          <div class="math-area">
+            <div class="math-grid" id="mathGrid"></div>
+          </div>
+
+          <div class="keypad" id="keypad">
+            <button class="key" data-number="1" type="button">1</button>
+            <button class="key" data-number="2" type="button">2</button>
+            <button class="key" data-number="3" type="button">3</button>
+            <button class="key" data-number="4" type="button">4</button>
+            <button class="key" data-number="5" type="button">5</button>
+            <button class="key" data-number="6" type="button">6</button>
+            <button class="key" data-number="7" type="button">7</button>
+            <button class="key" data-number="8" type="button">8</button>
+            <button class="key" data-number="9" type="button">9</button>
+            <button class="key delete-key" id="deleteButton" type="button">⌫</button>
+            <button class="key" data-number="0" type="button">0</button>
+          </div>
+        </div>
+
+        <div class="feedback" id="feedback"></div>
+      </section>
+
+      <section class="card summary-card hidden" id="summaryScreen">
+        <div class="summary-emoji">🏆🎉</div>
+        <h2>ทำแบบทดสอบครบแล้ว!</h2>
+        <div class="summary-score" id="summaryScore">0 / 10</div>
+        <p id="summaryMessage"></p>
+      </section>
+
+      <div class="bottom-controls">
+        <button class="main-button" id="startButton" type="button">▶ เริ่มทดสอบ</button>
+        <button class="reset-button" id="resetButton" type="button">↻ เริ่มใหม่</button>
+      </div>
+    </main>
+
+    <footer class="credit">
+      สร้างสรรค์โดย นายวรพันธ์ บัวผัน ครูโรงเรียนสุเหร่าคลองหนึ่ง(มานะราษฎร์บำรุง) เขตคลองสามวา กรุงเทพมหานคร
+    </footer>
+  </div>
+
+  <script>
+    "use strict";
+
+    const TOTAL_QUESTIONS = 10;
+
+    const state = {
+      questions: [],
+      currentIndex: 0,
+      score: 0,
+      selectedTime: 60,
+      timeLeft: 60,
+      timerId: null,
+      sequence: [],
+      stepIndex: 0,
+      inputs: {},
+      difficulty: "easy",
+      soundEnabled: true,
+      audioContext: null,
+      isRunning: false,
+      isChecking: false
+    };
+
+    const el = {
+      startScreen: document.getElementById("startScreen"),
+      gameScreen: document.getElementById("gameScreen"),
+      summaryScreen: document.getElementById("summaryScreen"),
+      difficultyButtons: document.querySelectorAll(".difficulty-button"),
+      timeButtons: document.querySelectorAll(".time-button"),
+      soundButton: document.getElementById("soundButton"),
+      progressText: document.getElementById("progressText"),
+      progressFill: document.getElementById("progressFill"),
+      scoreText: document.getElementById("scoreText"),
+      questionLabel: document.getElementById("questionLabel"),
+      timer: document.getElementById("timer"),
+      stepText: document.getElementById("stepText"),
+      mathGrid: document.getElementById("mathGrid"),
+      keypad: document.getElementById("keypad"),
+      feedback: document.getElementById("feedback"),
+      startButton: document.getElementById("startButton"),
+      resetButton: document.getElementById("resetButton"),
+      deleteButton: document.getElementById("deleteButton"),
+      summaryScore: document.getElementById("summaryScore"),
+      summaryMessage: document.getElementById("summaryMessage")
+    };
+
+    function randomInt(min, max) {
+      return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+
+    /* ระบบเสียง Offline ด้วย Web Audio API */
+    function setupAudio() {
+      if (!state.audioContext) {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+
+        if (AudioContext) {
+          state.audioContext = new AudioContext();
+        }
+      }
+
+      if (state.audioContext && state.audioContext.state === "suspended") {
+        state.audioContext.resume();
+      }
+    }
+
+    function playTone(frequency, duration, type = "sine", volume = 0.08, delay = 0) {
+      if (!state.soundEnabled) return;
+
+      setupAudio();
+
+      if (!state.audioContext) return;
+
+      const context = state.audioContext;
+      const oscillator = context.createOscillator();
+      const gain = context.createGain();
+      const startTime = context.currentTime + delay;
+
+      oscillator.type = type;
+      oscillator.frequency.setValueAtTime(frequency, startTime);
+
+      gain.gain.setValueAtTime(0.001, startTime);
+      gain.gain.exponentialRampToValueAtTime(volume, startTime + 0.01);
+      gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
+
+      oscillator.connect(gain);
+      gain.connect(context.destination);
+
+      oscillator.start(startTime);
+      oscillator.stop(startTime + duration + 0.03);
+    }
+
+    function playClickSound() {
+      playTone(430, 0.05, "sine", 0.04);
+    }
+
+    function playCorrectSound() {
+      playTone(523, 0.13, "sine", 0.08, 0);
+      playTone(659, 0.13, "sine", 0.08, 0.12);
+      playTone(784, 0.2, "sine", 0.1, 0.24);
+    }
+
+    function playWrongSound() {
+      playTone(220, 0.18, "triangle", 0.08, 0);
+      playTone(170, 0.24, "triangle", 0.08, 0.15);
+    }
+
+    /* เสียงติ๊กนับถอยหลังเฉพาะ 10 วินาทีสุดท้าย */
+    function playCountdownSound(secondsLeft) {
+      if (secondsLeft <= 0 || secondsLeft > 10) return;
+
+      if (secondsLeft <= 3) {
+        playTone(880, 0.12, "square", 0.065);
+      } else {
+        playTone(700, 0.07, "sine", 0.05);
+      }
+    }
+
+    function updateSoundButton() {
+      if (state.soundEnabled) {
+        el.soundButton.textContent = "🔊 เปิดเสียง";
+        el.soundButton.classList.remove("off");
+      } else {
+        el.soundButton.textContent = "🔇 ปิดเสียง";
+        el.soundButton.classList.add("off");
+      }
+    }
+
+    function generateQuestions() {
+      const ranges = {
+        easy: { minA: 100, maxA: 499, minB: 1, maxB: 4 },
+        medium: { minA: 200, maxA: 699, minB: 3, maxB: 6 },
+        hard: { minA: 500, maxA: 999, minB: 5, maxB: 9 }
+      };
+
+      const range = ranges[state.difficulty];
+      const questions = [];
+      const used = new Set();
+
+      while (questions.length < TOTAL_QUESTIONS) {
+        const multiplicand = randomInt(range.minA, range.maxA);
+        const multiplier = randomInt(range.minB, range.maxB);
+        const uniqueKey = `${multiplicand}x${multiplier}`;
+
+        if (!used.has(uniqueKey)) {
+          used.add(uniqueKey);
+          questions.push({
+            multiplicand,
+            multiplier,
+            answer: multiplicand * multiplier
+          });
+        }
+      }
+
+      return questions;
+    }
+
+    /* คำนวณผลคูณแต่ละหลัก และตัวทดจริง */
+    function calculateSteps(question) {
+      const hundreds = Math.floor(question.multiplicand / 100);
+      const tens = Math.floor((question.multiplicand % 100) / 10);
+      const units = question.multiplicand % 10;
+      const multiplier = question.multiplier;
+
+      const unitProduct = units * multiplier;
+      const answerUnits = unitProduct % 10;
+      const carryToTens = Math.floor(unitProduct / 10);
+
+      const tensProduct = (tens * multiplier) + carryToTens;
+      const answerTens = tensProduct % 10;
+      const carryToHundreds = Math.floor(tensProduct / 10);
+
+      const hundredsProduct = (hundreds * multiplier) + carryToHundreds;
+      const answerHundreds = hundredsProduct % 10;
+      const answerThousands = Math.floor(hundredsProduct / 10);
+
+      return {
+        hundreds,
+        tens,
+        units,
+        carryToTens,
+        carryToHundreds,
+        answerThousands,
+        answerHundreds,
+        answerTens,
+        answerUnits,
+        hasThousands: answerThousands > 0
+      };
+    }
+
+    /*
+      ลำดับการกรอก:
+      หน่วย → ตัวทดสิบ → สิบ → ตัวทดร้อย → ร้อย → พัน
+      ไม่มีช่องตัวทดตำแหน่งสุดท้าย
+    */
+    function buildInputSequence(calc) {
+      const sequence = [
+        {
+          id: "answer-units",
+          expected: calc.answerUnits,
+          label: "ขั้นที่ 1 • เติมคำตอบหลักหน่วย",
+          type: "answer"
+        }
+      ];
+
+      if (calc.carryToTens > 0) {
+        sequence.push({
+          id: "carry-tens",
+          expected: calc.carryToTens,
+          label: "✦ เติมตัวทดไปหลักสิบ",
+          type: "carry"
+        });
+      }
+
+      sequence.push({
+        id: "answer-tens",
+        expected: calc.answerTens,
+        label: "เติมคำตอบหลักสิบ",
+        type: "answer"
+      });
+
+      if (calc.carryToHundreds > 0) {
+        sequence.push({
+          id: "carry-hundreds",
+          expected: calc.carryToHundreds,
+          label: "✦ เติมตัวทดไปหลักร้อย",
+          type: "carry"
+        });
+      }
+
+      sequence.push({
+        id: "answer-hundreds",
+        expected: calc.answerHundreds,
+        label: "เติมคำตอบหลักร้อย",
+        type: "answer"
+      });
+
+      if (calc.hasThousands) {
+        sequence.push({
+          id: "answer-thousands",
+          expected: calc.answerThousands,
+          label: "เติมคำตอบหลักพัน",
+          type: "answer"
+        });
+      }
+
+      return sequence;
+    }
+
+    function createCell(className, text = "", id = "") {
+      const div = document.createElement("div");
+      div.className = className;
+      div.textContent = text;
+
+      if (id) div.id = id;
+
+      return div;
+    }
+
+    function renderQuestion() {
+      const question = state.questions[state.currentIndex];
+      const calc = calculateSteps(question);
+
+      state.inputs = {};
+      state.stepIndex = 0;
+      state.sequence = buildInputSequence(calc);
+      state.isChecking = false;
+
+      el.mathGrid.innerHTML = "";
+      el.feedback.textContent = "";
+      el.feedback.className = "feedback";
+      el.keypad.classList.remove("locked");
+      el.questionLabel.textContent = `ข้อ ${state.currentIndex + 1}`;
+
+      /* แถวตัวทด: หลักพันเว้นว่างเพื่อรักษาแนวตาราง */
+      el.mathGrid.appendChild(createCell("carry-space"));
+
+      el.mathGrid.appendChild(
+        calc.carryToHundreds > 0
+          ? createCell("carry-cell", "", "carry-hundreds")
+          : createCell("carry-cell hidden-carry")
+      );
+
+      el.mathGrid.appendChild(
+        calc.carryToTens > 0
+          ? createCell("carry-cell", "", "carry-tens")
+          : createCell("carry-cell hidden-carry")
+      );
+
+      el.mathGrid.appendChild(createCell("carry-space"));
+
+      /* ตัวตั้ง: ว่าง | ร้อย | สิบ | หน่วย */
+      el.mathGrid.appendChild(createCell("math-cell"));
+      el.mathGrid.appendChild(createCell("math-cell number-display", calc.hundreds));
+      el.mathGrid.appendChild(createCell("math-cell number-display", calc.tens));
+      el.mathGrid.appendChild(createCell("math-cell number-display", calc.units));
+
+      /* ตัวคูณ: ว่าง | ว่าง | × | ตัวคูณ */
+      el.mathGrid.appendChild(createCell("math-cell"));
+      el.mathGrid.appendChild(createCell("math-cell"));
+      el.mathGrid.appendChild(createCell("math-cell operator", "×"));
+      el.mathGrid.appendChild(createCell("math-cell number-display", question.multiplier));
+
+      const line = document.createElement("div");
+      line.className = "line";
+      el.mathGrid.appendChild(line);
+
+      /* คำตอบ: พัน | ร้อย | สิบ | หน่วย */
+      el.mathGrid.appendChild(
+        calc.hasThousands
+          ? createCell("math-cell answer-cell", "", "answer-thousands")
+          : createCell("math-cell answer-cell empty-answer")
+      );
+
+      el.mathGrid.appendChild(createCell("math-cell answer-cell", "", "answer-hundreds"));
+      el.mathGrid.appendChild(createCell("math-cell answer-cell", "", "answer-tens"));
+      el.mathGrid.appendChild(createCell("math-cell answer-cell", "", "answer-units"));
+
+      updateProgress();
+      startTimer();
+      focusCurrentStep();
+    }
+
+    function focusCurrentStep() {
+      document.querySelectorAll(".active-cell").forEach((cell) => {
+        cell.classList.remove("active-cell");
+      });
+
+      if (!state.isRunning || state.isChecking) return;
+
+      const step = state.sequence[state.stepIndex];
+
+      if (!step) return;
+
+      const cell = document.getElementById(step.id);
+
+      if (cell) {
+        cell.classList.add("active-cell");
+      }
+
+      el.stepText.textContent = step.label;
+    }
+
+    function pressNumber(number) {
+      if (!state.isRunning || state.isChecking) return;
+
+      const step = state.sequence[state.stepIndex];
+
+      if (!step) return;
+
+      const cell = document.getElementById(step.id);
+
+      if (!cell) return;
+
+      state.inputs[step.id] = Number(number);
+      cell.textContent = number;
+      cell.classList.remove("active-cell");
+
+      playClickSound();
+
+      state.stepIndex += 1;
+
+      if (state.stepIndex >= state.sequence.length) {
+        checkQuestion();
+      } else {
+        focusCurrentStep();
+      }
+    }
+
+    function deleteCellValue(id) {
+      delete state.inputs[id];
+
+      const cell = document.getElementById(id);
+
+      if (cell) {
+        cell.textContent = "";
+      }
+    }
+
+    function deleteNumber() {
+      if (!state.isRunning || state.isChecking) return;
+
+      const currentStep = state.sequence[state.stepIndex];
+
+      if (currentStep && state.inputs[currentStep.id] !== undefined) {
+        deleteCellValue(currentStep.id);
+        playClickSound();
+        focusCurrentStep();
+        return;
+      }
+
+      if (state.stepIndex > 0) {
+        state.stepIndex -= 1;
+        const previousStep = state.sequence[state.stepIndex];
+        deleteCellValue(previousStep.id);
+        playClickSound();
+        focusCurrentStep();
+      }
+    }
+
+    function checkQuestion() {
+      if (state.isChecking) return;
+
+      const question = state.questions[state.currentIndex];
+
+      const answerIds = [
+        "answer-thousands",
+        "answer-hundreds",
+        "answer-tens",
+        "answer-units"
+      ];
+
+      const typedAnswer = answerIds
+        .map((id) => state.inputs[id])
+        .filter((value) => value !== undefined)
+        .join("");
+
+      const carriesCorrect = state.sequence
+        .filter((step) => step.type === "carry")
+        .every((step) => state.inputs[step.id] === step.expected);
+
+      const isCorrect = typedAnswer === String(question.answer) && carriesCorrect;
+
+      state.isChecking = true;
+      state.isRunning = false;
+
+      clearInterval(state.timerId);
+      el.keypad.classList.add("locked");
+
+      const resultClass = isCorrect ? "result-correct" : "result-wrong";
+
+      state.sequence.forEach((step) => {
+        const cell = document.getElementById(step.id);
+
+        if (cell) {
+          cell.classList.remove("active-cell");
+          cell.classList.add(resultClass);
+        }
+      });
+
+      if (isCorrect) {
+        state.score += 1;
+        updateScore();
+        playCorrectSound();
+
+        el.feedback.textContent = "✓ ถูกต้อง! เก่งมาก 🎉";
+        el.feedback.className = "feedback correct";
+      } else {
+        playWrongSound();
+
+        el.feedback.textContent = "✕ ยังไม่ถูกนะ";
+        el.feedback.className = "feedback wrong";
+      }
+
+      setTimeout(nextQuestion, 1500);
+    }
+
+    function startTimer() {
+      clearInterval(state.timerId);
+
+      state.timeLeft = state.selectedTime;
+      state.isRunning = true;
+
+      updateTimer();
+
+      state.timerId = setInterval(() => {
+        state.timeLeft -= 1;
+        updateTimer();
+
+        if (state.timeLeft > 0 && state.timeLeft <= 10) {
+          playCountdownSound(state.timeLeft);
+        }
+
+        if (state.timeLeft <= 0) {
+          handleTimeUp();
+        }
+      }, 1000);
+    }
+
+    function updateTimer() {
+      const minutes = Math.floor(state.timeLeft / 60);
+      const seconds = state.timeLeft % 60;
+
+      el.timer.textContent =
+        `⏱ ${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+
+      el.timer.classList.toggle("warning", state.timeLeft <= 10);
+    }
+
+    function handleTimeUp() {
+      if (state.isChecking) return;
+
+      clearInterval(state.timerId);
+
+      state.isRunning = false;
+      state.isChecking = true;
+
+      el.keypad.classList.add("locked");
+      playWrongSound();
+
+      document
+        .querySelectorAll(".answer-cell:not(.empty-answer), .carry-cell:not(.hidden-carry)")
+        .forEach((cell) => {
+          cell.classList.remove("active-cell");
+          cell.classList.add("result-wrong");
+        });
+
+      el.feedback.textContent = "✕ หมดเวลา!";
+      el.feedback.className = "feedback wrong";
+
+      setTimeout(nextQuestion, 1500);
+    }
+
+    function nextQuestion() {
+      state.currentIndex += 1;
+
+      if (state.currentIndex >= TOTAL_QUESTIONS) {
+        finishTest();
+      } else {
+        renderQuestion();
+      }
+    }
+
+    function updateProgress() {
+      const currentQuestion = Math.min(state.currentIndex + 1, TOTAL_QUESTIONS);
+
+      el.progressText.textContent = `ข้อ ${currentQuestion} / ${TOTAL_QUESTIONS}`;
+      el.progressFill.style.width = `${(currentQuestion / TOTAL_QUESTIONS) * 100}%`;
+    }
+
+    function updateScore() {
+      el.scoreText.textContent = `🏆 คะแนน ${state.score}`;
+    }
+
+    function startTest() {
+      clearInterval(state.timerId);
+      setupAudio();
+
+      state.questions = generateQuestions();
+      state.currentIndex = 0;
+      state.score = 0;
+      state.isRunning = false;
+      state.isChecking = false;
+
+      updateScore();
+
+      el.startScreen.classList.add("hidden");
+      el.summaryScreen.classList.add("hidden");
+      el.gameScreen.classList.remove("hidden");
+
+      renderQuestion();
+    }
+
+    function finishTest() {
+      clearInterval(state.timerId);
+
+      state.isRunning = false;
+      state.isChecking = false;
+
+      el.gameScreen.classList.add("hidden");
+      el.summaryScreen.classList.remove("hidden");
+
+      el.progressText.textContent = `ข้อ ${TOTAL_QUESTIONS} / ${TOTAL_QUESTIONS}`;
+      el.progressFill.style.width = "100%";
+      el.summaryScore.textContent = `${state.score} / ${TOTAL_QUESTIONS}`;
+
+      if (state.score === 10) {
+        el.summaryMessage.textContent = "ยอดเยี่ยมมาก! ถูกทุกข้อเลย 🏆";
+        playCorrectSound();
+      } else if (state.score >= 7) {
+        el.summaryMessage.textContent = "เก่งมาก! ทำได้ดีมาก 🌟";
+      } else if (state.score >= 5) {
+        el.summaryMessage.textContent = "ทำได้ดีแล้ว ฝึกอีกนิดจะเก่งขึ้นอีก 💪";
+      } else {
+        el.summaryMessage.textContent = "ไม่เป็นไร ลองใหม่อีกครั้งนะ 😊";
+      }
+    }
+
+    function resetTest() {
+      clearInterval(state.timerId);
+
+      state.questions = [];
+      state.currentIndex = 0;
+      state.score = 0;
+      state.timeLeft = state.selectedTime;
+      state.sequence = [];
+      state.stepIndex = 0;
+      state.inputs = {};
+      state.isRunning = false;
+      state.isChecking = false;
+
+      el.startScreen.classList.remove("hidden");
+      el.gameScreen.classList.add("hidden");
+      el.summaryScreen.classList.add("hidden");
+
+      el.progressText.textContent = "ข้อ 0 / 10";
+      el.progressFill.style.width = "0%";
+      el.scoreText.textContent = "🏆 คะแนน 0";
+
+      const minutes = Math.floor(state.selectedTime / 60);
+      const seconds = state.selectedTime % 60;
+      el.timer.textContent =
+        `⏱ ${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+
+      el.timer.classList.remove("warning");
+      el.feedback.textContent = "";
+    }
+
+    el.difficultyButtons.forEach((button) => {
+      button.addEventListener("click", () => {
+        state.difficulty = button.dataset.difficulty;
+
+        el.difficultyButtons.forEach((item) => {
+          item.classList.remove("selected");
+        });
+
+        button.classList.add("selected");
+        playClickSound();
+      });
+    });
+
+    el.timeButtons.forEach((button) => {
+      button.addEventListener("click", () => {
+        state.selectedTime = Number(button.dataset.time);
+
+        el.timeButtons.forEach((item) => {
+          item.classList.remove("selected");
+        });
+
+        button.classList.add("selected");
+        playClickSound();
+        resetTest();
+      });
+    });
+
+    el.soundButton.addEventListener("click", () => {
+      state.soundEnabled = !state.soundEnabled;
+      updateSoundButton();
+
+      if (state.soundEnabled) {
+        setupAudio();
+        playClickSound();
+      }
+    });
+
+    el.startButton.addEventListener("click", startTest);
+    el.resetButton.addEventListener("click", resetTest);
+    el.deleteButton.addEventListener("click", deleteNumber);
+
+    document.querySelectorAll("[data-number]").forEach((button) => {
+      button.addEventListener("click", () => {
+        pressNumber(button.dataset.number);
+      });
+    });
+
+    document.addEventListener("keydown", (event) => {
+      if (!state.isRunning || state.isChecking) return;
+
+      if (/^[0-9]$/.test(event.key)) {
+        event.preventDefault();
+        pressNumber(event.key);
+      }
+
+      if (event.key === "Backspace" || event.key === "Delete") {
+        event.preventDefault();
+        deleteNumber();
+      }
+    });
+
+    updateSoundButton();
+    resetTest();
+  </script>
+</body>
+</html>
