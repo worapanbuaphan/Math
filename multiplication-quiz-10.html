@@ -1,0 +1,2078 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>เกมฝึกทักษะการคูณ</title>
+
+<style>
+*{
+    box-sizing:border-box;
+    margin:0;
+    padding:0;
+}
+
+html,body{
+    width:100%;
+    height:100%;
+    overflow:hidden;
+}
+
+body{
+    font-family:
+        "Segoe UI",
+        "Tahoma",
+        sans-serif;
+
+    background:
+        linear-gradient(
+            135deg,
+            #fff8fb,
+            #f7f8ff 45%,
+            #f1fcf8
+        );
+
+    color:#304a80;
+}
+
+
+/* =====================================================
+   พื้นหลังตกแต่ง
+===================================================== */
+
+.background{
+    position:fixed;
+    inset:0;
+    overflow:hidden;
+    pointer-events:none;
+    z-index:0;
+}
+
+.cloud{
+    position:absolute;
+    font-size:55px;
+    opacity:.75;
+}
+
+.cloud.left{
+    left:35px;
+    top:220px;
+}
+
+.cloud.right{
+    right:70px;
+    top:155px;
+}
+
+.flower{
+    position:absolute;
+    font-size:38px;
+}
+
+.flower.left{
+    left:110px;
+    bottom:175px;
+}
+
+.flower.right{
+    right:125px;
+    bottom:160px;
+}
+
+.sparkle{
+    position:absolute;
+    font-size:35px;
+}
+
+.sparkle.one{
+    left:280px;
+    top:90px;
+}
+
+.sparkle.two{
+    right:330px;
+    top:270px;
+}
+
+.heart{
+    position:absolute;
+    right:140px;
+    bottom:155px;
+    font-size:40px;
+}
+
+
+/* พื้นด้านล่าง */
+
+.hill{
+    position:absolute;
+    width:70%;
+    height:250px;
+    border-radius:50%;
+    bottom:-130px;
+    left:-15%;
+    background:#e5f5d5;
+}
+
+.hill.blue{
+    left:auto;
+    right:-15%;
+    background:#dcefff;
+}
+
+.hill.purple{
+    width:45%;
+    left:38%;
+    bottom:-190px;
+    background:#eee3ff;
+}
+
+
+/* =====================================================
+   หน้าเลือก Level
+===================================================== */
+
+#levelScreen{
+    width:100%;
+    height:100%;
+    position:relative;
+    z-index:2;
+
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+
+    padding-top:55px;
+}
+
+.title{
+    font-size:clamp(42px,5vw,72px);
+    font-weight:900;
+    color:#304d88;
+    text-align:center;
+}
+
+.subtitle{
+    font-size:clamp(18px,2vw,28px);
+    color:#7182a5;
+    margin-top:10px;
+    margin-bottom:35px;
+}
+
+
+/* =====================================================
+   Grid Level
+===================================================== */
+
+.levelGrid{
+    width:min(1180px,90%);
+    display:grid;
+    grid-template-columns:repeat(5,1fr);
+    gap:22px;
+}
+
+
+/* =====================================================
+   ปุ่ม Level
+===================================================== */
+
+.levelBtn{
+    height:180px;
+    border:none;
+    border-radius:32px;
+    cursor:pointer;
+
+    color:#29467d;
+
+    box-shadow:
+        0 12px 28px
+        rgba(70,90,130,.12);
+
+    position:relative;
+
+    transition:.2s;
+
+    font-family:inherit;
+}
+
+.levelBtn:hover:not(.locked){
+    transform:translateY(-5px);
+}
+
+.levelBtn:active:not(.locked){
+    transform:scale(.98);
+}
+
+
+/* สี Level */
+
+.levelBtn:nth-child(1){
+    background:#ffdce9;
+}
+
+.levelBtn:nth-child(2){
+    background:#dcecff;
+}
+
+.levelBtn:nth-child(3){
+    background:#fff0bf;
+}
+
+.levelBtn:nth-child(4){
+    background:#dcf5e3;
+}
+
+.levelBtn:nth-child(5){
+    background:#eadfff;
+}
+
+.levelBtn:nth-child(6){
+    background:#ffe2d5;
+}
+
+.levelBtn:nth-child(7){
+    background:#dff5f3;
+}
+
+.levelBtn:nth-child(8){
+    background:#e5e3ff;
+}
+
+.levelBtn:nth-child(9){
+    background:#fff0d9;
+}
+
+.levelBtn:nth-child(10){
+    background:#dceeff;
+}
+
+
+/* เลข Level */
+
+.levelNumber{
+    display:block;
+    font-size:65px;
+    font-weight:900;
+    line-height:1;
+    margin-top:18px;
+}
+
+
+/* ชื่อ Level */
+
+.levelName{
+    display:block;
+    font-size:19px;
+    margin-top:12px;
+}
+
+
+/* ไอคอน */
+
+.levelIcon{
+    display:block;
+    font-size:30px;
+    margin-top:12px;
+}
+
+
+/* Lock */
+
+.lock{
+    position:absolute;
+    bottom:8px;
+    left:50%;
+    transform:translateX(-50%);
+    font-size:29px;
+}
+
+
+/* Check */
+
+.check{
+    position:absolute;
+    right:12px;
+    top:10px;
+
+    width:42px;
+    height:42px;
+
+    border-radius:50%;
+
+    background:white;
+    color:#22b879;
+
+    display:none;
+    align-items:center;
+    justify-content:center;
+
+    font-size:29px;
+    font-weight:900;
+
+    box-shadow:
+        0 5px 12px
+        rgba(0,0,0,.1);
+}
+
+.levelBtn.completed .check{
+    display:flex;
+}
+
+.levelBtn.completed{
+    box-shadow:
+        0 0 0 4px rgba(35,190,120,.20),
+        0 12px 28px
+        rgba(70,90,130,.12);
+}
+
+
+/* =====================================================
+   ปุ่ม Reset
+===================================================== */
+
+.resetBtn{
+    margin-top:28px;
+
+    border:none;
+
+    background:white;
+
+    color:#7182a5;
+
+    padding:12px 28px;
+
+    border-radius:18px;
+
+    font-size:18px;
+    font-weight:600;
+
+    cursor:pointer;
+
+    box-shadow:
+        0 7px 20px
+        rgba(70,90,130,.10);
+}
+
+
+/* =====================================================
+   หน้าเกม
+===================================================== */
+
+#gameScreen{
+    width:100%;
+    height:100%;
+
+    position:relative;
+    z-index:2;
+
+    display:none;
+}
+
+
+/* =====================================================
+   ตัวจับเวลาแบบวงกลม
+===================================================== */
+
+.timerCircle{
+
+    position:absolute;
+
+    top:42px;
+    left:25px;
+
+    width:140px;
+    height:140px;
+
+    border-radius:50%;
+
+    background:white;
+
+    border:8px solid #f19abb;
+
+    box-shadow:
+        0 10px 25px
+        rgba(70,90,130,.12);
+
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+
+    z-index:10;
+}
+
+.timerNumber{
+    font-size:45px;
+    line-height:1;
+    font-weight:900;
+    color:#e85f89;
+}
+
+.timerText{
+    margin-top:5px;
+    font-size:18px;
+    color:#7182a5;
+}
+
+
+/* =====================================================
+   ข้อมูลด้านบนขวา
+===================================================== */
+
+.gameInfo{
+
+    position:absolute;
+
+    right:28px;
+    top:30px;
+
+    min-width:395px;
+
+    height:70px;
+
+    padding:0 28px;
+
+    background:white;
+
+    border-radius:35px;
+
+    box-shadow:
+        0 10px 25px
+        rgba(70,90,130,.10);
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:center;
+
+    gap:18px;
+
+    font-size:27px;
+
+    font-weight:800;
+
+    color:#30466f;
+
+    z-index:10;
+}
+
+.divider{
+    color:#a4afc2;
+}
+
+
+/* =====================================================
+   กล่องโจทย์
+===================================================== */
+
+.questionBox{
+
+    position:absolute;
+
+    left:15%;
+    right:15%;
+
+    top:88px;
+
+    height:300px;
+
+    background:white;
+
+    border-radius:48px;
+
+    box-shadow:
+        0 15px 35px
+        rgba(70,90,130,.10);
+
+    display:flex;
+
+    align-items:center;
+    justify-content:center;
+
+    z-index:3;
+}
+
+
+/* =====================================================
+   โจทย์
+===================================================== */
+
+.question{
+
+    font-size:
+        clamp(100px,12vw,175px);
+
+    font-weight:900;
+
+    color:#304d88;
+
+    line-height:1;
+
+    white-space:nowrap;
+
+    text-align:center;
+}
+
+
+/* =====================================================
+   ตัวเลือก 4 ปุ่ม
+===================================================== */
+
+.answers{
+
+    position:absolute;
+
+    left:15%;
+    right:15%;
+
+    top:420px;
+
+    display:grid;
+
+    grid-template-columns:
+        1fr 1fr;
+
+    gap:25px;
+
+    z-index:5;
+}
+
+
+/* ปุ่มคำตอบ */
+
+.answerBtn{
+
+    height:178px;
+
+    border:none;
+
+    border-radius:34px;
+
+    font-family:inherit;
+
+    font-size:
+        clamp(48px,5.5vw,82px);
+
+    font-weight:900;
+
+    color:#304d88;
+
+    cursor:pointer;
+
+    display:flex;
+
+    align-items:center;
+    justify-content:center;
+
+    padding:
+        10px 30px;
+
+    line-height:1;
+
+    white-space:nowrap;
+
+    overflow:hidden;
+
+    box-shadow:
+        0 12px 28px
+        rgba(70,90,130,.12);
+
+    transition:.18s;
+}
+
+
+/* สีเหมือนภาพ */
+
+.answerBtn:nth-child(1){
+    background:#ffdce9;
+}
+
+.answerBtn:nth-child(2){
+    background:#dcecff;
+}
+
+.answerBtn:nth-child(3){
+    background:#fff0bf;
+}
+
+.answerBtn:nth-child(4){
+    background:#dcf5e3;
+}
+
+.answerBtn:hover{
+    transform:translateY(-4px);
+
+    box-shadow:
+        0 18px 32px
+        rgba(70,90,130,.18);
+}
+
+.answerBtn:active{
+    transform:scale(.97);
+}
+
+
+/* =====================================================
+   หน้าแสดงผล
+===================================================== */
+
+#resultScreen{
+
+    display:none;
+
+    width:100%;
+    height:100%;
+
+    position:relative;
+
+    z-index:20;
+
+    align-items:center;
+    justify-content:center;
+
+    flex-direction:column;
+
+    text-align:center;
+}
+
+.resultIcon{
+    font-size:110px;
+    margin-bottom:15px;
+}
+
+.resultTitle{
+    font-size:65px;
+    font-weight:900;
+    color:#304d88;
+}
+
+.resultScore{
+    font-size:30px;
+    color:#7182a5;
+    line-height:1.8;
+    margin-top:12px;
+}
+
+.resultButtons{
+    display:flex;
+    gap:18px;
+    margin-top:30px;
+}
+
+.resultBtn{
+    border:none;
+    padding:15px 30px;
+    border-radius:20px;
+
+    background:white;
+    color:#405c92;
+
+    font-size:20px;
+    font-weight:700;
+
+    cursor:pointer;
+
+    box-shadow:
+        0 8px 20px
+        rgba(70,90,120,.12);
+}
+
+.resultBtn:hover{
+    transform:translateY(-3px);
+}
+
+
+/* =====================================================
+   Responsive
+===================================================== */
+
+@media(max-width:1000px){
+
+    .levelGrid{
+        gap:10px;
+    }
+
+    .levelBtn{
+        height:140px;
+        border-radius:22px;
+    }
+
+    .levelNumber{
+        font-size:45px;
+    }
+
+    .levelName{
+        font-size:14px;
+    }
+
+    .levelIcon{
+        font-size:22px;
+    }
+
+    .questionBox,
+    .answers{
+        left:10%;
+        right:10%;
+    }
+
+    .questionBox{
+        height:260px;
+    }
+
+    .answers{
+        top:375px;
+    }
+
+    .answerBtn{
+        height:140px;
+    }
+}
+
+
+@media(max-height:700px){
+
+    #levelScreen{
+        padding-top:20px;
+    }
+
+    .subtitle{
+        margin-bottom:15px;
+    }
+
+    .levelBtn{
+        height:115px;
+    }
+
+    .levelNumber{
+        font-size:38px;
+        margin-top:10px;
+    }
+
+    .levelName{
+        margin-top:4px;
+        font-size:12px;
+    }
+
+    .levelIcon{
+        margin-top:3px;
+        font-size:18px;
+    }
+
+    .lock{
+        font-size:21px;
+    }
+
+    .resetBtn{
+        margin-top:12px;
+    }
+
+    .timerCircle{
+        width:115px;
+        height:115px;
+        top:20px;
+    }
+
+    .timerNumber{
+        font-size:37px;
+    }
+
+    .gameInfo{
+        top:15px;
+        height:58px;
+        font-size:21px;
+    }
+
+    .questionBox{
+        top:75px;
+        height:220px;
+    }
+
+    .question{
+        font-size:
+            clamp(75px,10vw,125px);
+    }
+
+    .answers{
+        top:320px;
+        gap:15px;
+    }
+
+    .answerBtn{
+        height:125px;
+    }
+}
+
+
+@media(max-width:650px){
+
+    .levelGrid{
+        width:94%;
+        gap:7px;
+    }
+
+    .levelBtn{
+        height:105px;
+    }
+
+    .levelNumber{
+        font-size:34px;
+    }
+
+    .levelName{
+        font-size:11px;
+    }
+
+    .levelIcon{
+        font-size:16px;
+    }
+
+    .timerCircle{
+        width:85px;
+        height:85px;
+        border-width:5px;
+        left:10px;
+    }
+
+    .timerNumber{
+        font-size:29px;
+    }
+
+    .timerText{
+        font-size:12px;
+    }
+
+    .gameInfo{
+        right:10px;
+        min-width:auto;
+        height:48px;
+        padding:0 12px;
+        gap:7px;
+        font-size:14px;
+    }
+
+    .questionBox{
+        left:5%;
+        right:5%;
+        top:80px;
+        height:190px;
+        border-radius:30px;
+    }
+
+    .question{
+        font-size:
+            clamp(60px,18vw,100px);
+    }
+
+    .answers{
+        left:5%;
+        right:5%;
+        top:295px;
+        gap:12px;
+    }
+
+    .answerBtn{
+        height:105px;
+        border-radius:23px;
+        font-size:
+            clamp(35px,10vw,60px);
+        padding:5px 10px;
+    }
+}
+
+</style>
+</head>
+
+
+<body>
+
+
+<!-- =====================================================
+     พื้นหลัง
+===================================================== -->
+
+<div class="background">
+
+    <div class="cloud left">☁️</div>
+    <div class="cloud right">☁️</div>
+
+    <div class="sparkle one">✨</div>
+    <div class="sparkle two">⭐</div>
+
+    <div class="flower left">🌸</div>
+    <div class="flower right">🌼</div>
+
+    <div class="heart">💖</div>
+
+    <div class="hill"></div>
+    <div class="hill blue"></div>
+    <div class="hill purple"></div>
+
+</div>
+
+
+<!-- =====================================================
+     หน้าเลือก Level
+===================================================== -->
+
+<div id="levelScreen">
+
+    <div class="title">
+        ⭐ เกมฝึกทักษะการคูณ
+    </div>
+
+    <div class="subtitle">
+        ผ่านด่านทีละ Level เพื่อปลดล็อกด่านใหม่ 🔒
+    </div>
+
+
+    <div class="levelGrid">
+
+        <!-- Level 1 -->
+        <button class="levelBtn"
+                data-level="1"
+                onclick="selectLevel(1)">
+
+            <span class="levelNumber">1</span>
+            <span class="levelName">Level 1</span>
+            <span class="levelIcon">🌱</span>
+
+            <span class="lock">🔓</span>
+
+            <span class="check">✓</span>
+        </button>
+
+
+        <!-- Level 2 -->
+        <button class="levelBtn locked"
+                data-level="2"
+                onclick="selectLevel(2)">
+
+            <span class="levelNumber">2</span>
+            <span class="levelName">Level 2</span>
+            <span class="levelIcon">🌟</span>
+
+            <span class="lock">🔒</span>
+
+            <span class="check">✓</span>
+        </button>
+
+
+        <!-- Level 3 -->
+        <button class="levelBtn locked"
+                data-level="3"
+                onclick="selectLevel(3)">
+
+            <span class="levelNumber">3</span>
+            <span class="levelName">Level 3</span>
+            <span class="levelIcon">🚀</span>
+
+            <span class="lock">🔒</span>
+
+            <span class="check">✓</span>
+        </button>
+
+
+        <!-- Level 4 -->
+        <button class="levelBtn locked"
+                data-level="4"
+                onclick="selectLevel(4)">
+
+            <span class="levelNumber">4</span>
+            <span class="levelName">Level 4</span>
+            <span class="levelIcon">🎯</span>
+
+            <span class="lock">🔒</span>
+
+            <span class="check">✓</span>
+        </button>
+
+
+        <!-- Level 5 -->
+        <button class="levelBtn locked"
+                data-level="5"
+                onclick="selectLevel(5)">
+
+            <span class="levelNumber">5</span>
+            <span class="levelName">Level 5</span>
+            <span class="levelIcon">🏆</span>
+
+            <span class="lock">🔒</span>
+
+            <span class="check">✓</span>
+        </button>
+
+
+        <!-- Level 6 -->
+        <button class="levelBtn locked"
+                data-level="6"
+                onclick="selectLevel(6)">
+
+            <span class="levelNumber">6</span>
+            <span class="levelName">Level 6</span>
+            <span class="levelIcon">💫</span>
+
+            <span class="lock">🔒</span>
+
+            <span class="check">✓</span>
+        </button>
+
+
+        <!-- Level 7 -->
+        <button class="levelBtn locked"
+                data-level="7"
+                onclick="selectLevel(7)">
+
+            <span class="levelNumber">7</span>
+            <span class="levelName">Level 7</span>
+            <span class="levelIcon">🌈</span>
+
+            <span class="lock">🔒</span>
+
+            <span class="check">✓</span>
+        </button>
+
+
+        <!-- Level 8 -->
+        <button class="levelBtn locked"
+                data-level="8"
+                onclick="selectLevel(8)">
+
+            <span class="levelNumber">8</span>
+            <span class="levelName">Level 8</span>
+            <span class="levelIcon">🪄</span>
+
+            <span class="lock">🔒</span>
+
+            <span class="check">✓</span>
+        </button>
+
+
+        <!-- Level 9 -->
+        <button class="levelBtn locked"
+                data-level="9"
+                onclick="selectLevel(9)">
+
+            <span class="levelNumber">9</span>
+            <span class="levelName">Level 9</span>
+            <span class="levelIcon">👑</span>
+
+            <span class="lock">🔒</span>
+
+            <span class="check">✓</span>
+        </button>
+
+
+        <!-- Level 10 -->
+        <button class="levelBtn locked"
+                data-level="10"
+                onclick="selectLevel(10)">
+
+            <span class="levelNumber">10</span>
+            <span class="levelName">Level 10</span>
+            <span class="levelIcon">🏅</span>
+
+            <span class="lock">🔒</span>
+
+            <span class="check">✓</span>
+        </button>
+
+    </div>
+
+
+    <button class="resetBtn"
+            onclick="resetProgress()">
+
+        ↻ เริ่มความก้าวหน้าใหม่
+
+    </button>
+
+</div>
+
+
+
+<!-- =====================================================
+     หน้าเล่นเกม
+===================================================== -->
+
+<div id="gameScreen">
+
+
+    <!-- เวลา -->
+
+    <div class="timerCircle">
+
+        <div class="timerNumber"
+             id="timerNumber">
+
+            10
+
+        </div>
+
+        <div class="timerText">
+            วินาที
+        </div>
+
+    </div>
+
+
+    <!-- ข้อมูลเกม -->
+
+    <div class="gameInfo">
+
+        <span id="levelText">
+            Level 1
+        </span>
+
+        <span class="divider">|</span>
+
+        <span id="questionText">
+            ข้อ 1/20
+        </span>
+
+        <span class="divider">|</span>
+
+        <span>
+            ⭐ <span id="scoreText">0</span>
+        </span>
+
+    </div>
+
+
+    <!-- กล่องโจทย์ -->
+
+    <div class="questionBox">
+
+        <div class="question"
+             id="question">
+
+            2 × 3
+
+        </div>
+
+    </div>
+
+
+    <!-- ตัวเลือก -->
+
+    <div class="answers">
+
+        <button class="answerBtn"
+                id="answer0">
+        </button>
+
+        <button class="answerBtn"
+                id="answer1">
+        </button>
+
+        <button class="answerBtn"
+                id="answer2">
+        </button>
+
+        <button class="answerBtn"
+                id="answer3">
+        </button>
+
+    </div>
+
+</div>
+
+
+
+<!-- =====================================================
+     หน้าผลลัพธ์
+===================================================== -->
+
+<div id="resultScreen">
+
+    <div class="resultIcon"
+         id="resultIcon">
+        🎉
+    </div>
+
+    <div class="resultTitle"
+         id="resultTitle">
+
+        ผ่าน Level!
+
+    </div>
+
+    <div class="resultScore"
+         id="resultScore">
+
+    </div>
+
+
+    <div class="resultButtons">
+
+        <button class="resultBtn"
+                onclick="backToLevels()">
+
+            🗺️ เลือก Level
+
+        </button>
+
+        <button class="resultBtn"
+                onclick="retryLevel()">
+
+            🔄 เล่นอีกครั้ง
+
+        </button>
+
+    </div>
+
+</div>
+
+
+
+<script>
+
+/* =====================================================
+   ตั้งค่า
+===================================================== */
+
+const TOTAL_LEVELS = 10;
+
+const QUESTIONS_PER_LEVEL = 20;
+
+const TIME_LIMIT = 10;
+
+
+/* =====================================================
+   ตัวแปร
+===================================================== */
+
+let currentLevel = 1;
+
+let currentQuestion = 0;
+
+let score = 0;
+
+let correctAnswer = 0;
+
+let timer = TIME_LIMIT;
+
+let timerInterval = null;
+
+let questionPool = [];
+
+let currentQuestions = [];
+
+
+/* =====================================================
+   DOM
+===================================================== */
+
+const levelScreen =
+    document.getElementById("levelScreen");
+
+const gameScreen =
+    document.getElementById("gameScreen");
+
+const resultScreen =
+    document.getElementById("resultScreen");
+
+const questionEl =
+    document.getElementById("question");
+
+const timerNumber =
+    document.getElementById("timerNumber");
+
+const levelText =
+    document.getElementById("levelText");
+
+const questionText =
+    document.getElementById("questionText");
+
+const scoreText =
+    document.getElementById("scoreText");
+
+const answerButtons =
+    document.querySelectorAll(".answerBtn");
+
+
+/* =====================================================
+   ความก้าวหน้า
+===================================================== */
+
+let completedLevels =
+    JSON.parse(
+        localStorage.getItem(
+            "multiplicationLevels"
+        )
+    ) || [];
+
+
+/* =====================================================
+   กำหนดโจทย์แต่ละ Level
+===================================================== */
+
+function getLevelTables(level){
+
+    const tables = {
+
+        1:[2,3],
+
+        2:[4,5],
+
+        3:[6,7],
+
+        4:[8,9],
+
+        5:[10,11,12],
+
+        6:[2,3,4,5],
+
+        7:[6,7,8],
+
+        8:[9,10,11,12],
+
+        9:[2,3,4,5,6,7,8,9,10,11,12],
+
+        10:[2,3,4,5,6,7,8,9,10,11,12]
+
+    };
+
+    return tables[level];
+
+}
+
+
+/* =====================================================
+   สร้างชุดโจทย์
+===================================================== */
+
+function generateQuestions(level){
+
+    const tables =
+        getLevelTables(level);
+
+    let pool = [];
+
+
+    tables.forEach(a => {
+
+        for(let b=1; b<=12; b++){
+
+            pool.push({
+                a:a,
+                b:b,
+                answer:a*b
+            });
+
+        }
+
+    });
+
+
+    /*
+       สุ่มทั้งหมด
+    */
+
+    pool.sort(
+        () => Math.random() - 0.5
+    );
+
+
+    /*
+       เอา 20 ข้อแรก
+       ไม่มีโจทย์ซ้ำ
+    */
+
+    return pool.slice(
+        0,
+        QUESTIONS_PER_LEVEL
+    );
+
+}
+
+
+/* =====================================================
+   เริ่ม Level
+===================================================== */
+
+function selectLevel(level){
+
+    /*
+       Level 1 เปิดเสมอ
+       Level อื่นต้องผ่านด่านก่อน
+    */
+
+    if(
+        level > 1 &&
+        !completedLevels.includes(level - 1)
+    ){
+
+        return;
+
+    }
+
+
+    currentLevel = level;
+
+    currentQuestion = 0;
+
+    score = 0;
+
+
+    currentQuestions =
+        generateQuestions(level);
+
+
+    levelScreen.style.display = "none";
+
+    resultScreen.style.display = "none";
+
+    gameScreen.style.display = "block";
+
+
+    levelText.textContent =
+        `Level ${level}`;
+
+    scoreText.textContent =
+        "0";
+
+
+    showQuestion();
+
+}
+
+
+/* =====================================================
+   แสดงโจทย์
+===================================================== */
+
+function showQuestion(){
+
+    if(
+        currentQuestion >=
+        currentQuestions.length
+    ){
+
+        finishLevel();
+
+        return;
+
+    }
+
+
+    const q =
+        currentQuestions[
+            currentQuestion
+        ];
+
+
+    correctAnswer =
+        q.answer;
+
+
+    questionEl.textContent =
+        `${q.a} × ${q.b}`;
+
+
+    questionText.textContent =
+        `ข้อ ${currentQuestion + 1}/20`;
+
+
+    scoreText.textContent =
+        score;
+
+
+    createAnswers(
+        correctAnswer
+    );
+
+
+    startTimer();
+
+}
+
+
+/* =====================================================
+   สร้างตัวเลือก
+===================================================== */
+
+function createAnswers(answer){
+
+    let answers = [answer];
+
+
+    /*
+       สร้างคำตอบผิด
+    */
+
+    while(
+        answers.length < 4
+    ){
+
+        let wrong;
+
+
+        const type =
+            Math.floor(
+                Math.random() * 4
+            );
+
+
+        if(type === 0){
+
+            wrong =
+                answer +
+                randomInt(1,10);
+
+        }
+
+        else if(type === 1){
+
+            wrong =
+                answer -
+                randomInt(1,10);
+
+        }
+
+        else if(type === 2){
+
+            wrong =
+                answer +
+                randomInt(10,20);
+
+        }
+
+        else{
+
+            wrong =
+                answer -
+                randomInt(10,20);
+
+        }
+
+
+        if(
+            wrong > 0 &&
+            !answers.includes(wrong)
+        ){
+
+            answers.push(wrong);
+
+        }
+
+    }
+
+
+    /*
+       สุ่มตำแหน่งคำตอบ
+    */
+
+    answers.sort(
+        () => Math.random() - .5
+    );
+
+
+    answerButtons.forEach(
+        (button,index)=>{
+
+            button.textContent =
+                answers[index];
+
+            button.disabled = false;
+
+            button.onclick =
+                function(){
+
+                    checkAnswer(
+                        answers[index]
+                    );
+
+                };
+
+        }
+    );
+
+}
+
+
+/* =====================================================
+   สุ่มตัวเลข
+===================================================== */
+
+function randomInt(min,max){
+
+    return Math.floor(
+        Math.random() *
+        (max-min+1)
+    ) + min;
+
+}
+
+
+/* =====================================================
+   Timer
+===================================================== */
+
+function startTimer(){
+
+    clearInterval(timerInterval);
+
+    timer =
+        TIME_LIMIT;
+
+
+    timerNumber.textContent =
+        timer;
+
+
+    timerInterval =
+        setInterval(
+            function(){
+
+                timer--;
+
+                timerNumber.textContent =
+                    timer;
+
+
+                if(timer <= 0){
+
+                    clearInterval(
+                        timerInterval
+                    );
+
+                    endGame(
+                        "หมดเวลา ⏰"
+                    );
+
+                }
+
+            },
+            1000
+        );
+
+}
+
+
+/* =====================================================
+   ตรวจคำตอบ
+===================================================== */
+
+function checkAnswer(answer){
+
+    clearInterval(
+        timerInterval
+    );
+
+
+    answerButtons.forEach(
+        button => {
+            button.disabled = true;
+        }
+    );
+
+
+    /*
+       ตอบผิด
+    */
+
+    if(
+        answer !== correctAnswer
+    ){
+
+        endGame(
+            "ตอบผิด ❌"
+        );
+
+        return;
+
+    }
+
+
+    /*
+       ตอบถูก
+    */
+
+    score++;
+
+    currentQuestion++;
+
+
+    scoreText.textContent =
+        score;
+
+
+    /*
+       ถ้าครบ 20 ข้อ
+    */
+
+    if(
+        currentQuestion >=
+        QUESTIONS_PER_LEVEL
+    ){
+
+        finishLevel();
+
+        return;
+
+    }
+
+
+    /*
+       ไปข้อต่อไป
+    */
+
+    setTimeout(
+        function(){
+
+            showQuestion();
+
+        },
+        250
+    );
+
+}
+
+
+/* =====================================================
+   จบเกม
+===================================================== */
+
+function endGame(message){
+
+    clearInterval(
+        timerInterval
+    );
+
+
+    gameScreen.style.display =
+        "none";
+
+    resultScreen.style.display =
+        "flex";
+
+
+    document.getElementById(
+        "resultIcon"
+    ).textContent = "💪";
+
+
+    document.getElementById(
+        "resultTitle"
+    ).textContent = message;
+
+
+    document.getElementById(
+        "resultScore"
+    ).innerHTML =
+
+        `
+        Level ${currentLevel}
+        <br>
+        คะแนน ${score} / 20
+        <br>
+        ลองใหม่อีกครั้งนะ!
+        `;
+
+}
+
+
+/* =====================================================
+   ผ่าน Level
+===================================================== */
+
+function finishLevel(){
+
+    clearInterval(
+        timerInterval
+    );
+
+
+    /*
+       บันทึก Level
+    */
+
+    if(
+        !completedLevels.includes(
+            currentLevel
+        )
+    ){
+
+        completedLevels.push(
+            currentLevel
+        );
+
+        completedLevels.sort(
+            (a,b)=>a-b
+        );
+
+
+        localStorage.setItem(
+            "multiplicationLevels",
+            JSON.stringify(
+                completedLevels
+            )
+        );
+
+    }
+
+
+    gameScreen.style.display =
+        "none";
+
+    resultScreen.style.display =
+        "flex";
+
+
+    const icon =
+        document.getElementById(
+            "resultIcon"
+        );
+
+    const title =
+        document.getElementById(
+            "resultTitle"
+        );
+
+    const result =
+        document.getElementById(
+            "resultScore"
+        );
+
+
+    /*
+       ผ่าน Level 10
+    */
+
+    if(
+        currentLevel === 10
+    ){
+
+        icon.textContent =
+            "🏆";
+
+        title.textContent =
+            "ภารกิจสำเร็จ!";
+
+        result.innerHTML =
+
+            `
+            ยอดเยี่ยมมาก 🎉
+            <br>
+            คุณผ่านครบทั้ง 10 Level แล้ว
+            <br>
+            คะแนน ${score} / 20
+            `;
+
+    }
+
+    else{
+
+        icon.textContent =
+            "🎉";
+
+        title.textContent =
+            `ผ่าน Level ${currentLevel}!`;
+
+        result.innerHTML =
+
+            `
+            คะแนน ${score} / 20
+            <br>
+            🔓 ปลดล็อก Level ${currentLevel + 1}
+            `;
+
+    }
+
+}
+
+
+/* =====================================================
+   เล่น Level เดิมใหม่
+===================================================== */
+
+function retryLevel(){
+
+    resultScreen.style.display =
+        "none";
+
+    gameScreen.style.display =
+        "block";
+
+
+    currentQuestion = 0;
+
+    score = 0;
+
+
+    currentQuestions =
+        generateQuestions(
+            currentLevel
+        );
+
+
+    levelText.textContent =
+        `Level ${currentLevel}`;
+
+    scoreText.textContent =
+        "0";
+
+
+    showQuestion();
+
+}
+
+
+/* =====================================================
+   กลับหน้าเลือก Level
+===================================================== */
+
+function backToLevels(){
+
+    clearInterval(
+        timerInterval
+    );
+
+
+    gameScreen.style.display =
+        "none";
+
+    resultScreen.style.display =
+        "none";
+
+    levelScreen.style.display =
+        "flex";
+
+
+    updateLevels();
+
+}
+
+
+/* =====================================================
+   อัปเดตสถานะ Level
+===================================================== */
+
+function updateLevels(){
+
+    const buttons =
+        document.querySelectorAll(
+            ".levelBtn"
+        );
+
+
+    buttons.forEach(
+        (button,index)=>{
+
+            const level =
+                index + 1;
+
+
+            /*
+               ผ่านแล้ว
+            */
+
+            if(
+                completedLevels.includes(
+                    level
+                )
+            ){
+
+                button.classList.add(
+                    "completed"
+                );
+
+                button.classList.remove(
+                    "locked"
+                );
+
+                button.querySelector(
+                    ".lock"
+                ).textContent =
+                    "🔓";
+
+            }
+
+
+            /*
+               Level ที่เปิดให้เล่น
+            */
+
+            else if(
+                level === 1 ||
+                completedLevels.includes(
+                    level - 1
+                )
+            ){
+
+                button.classList.remove(
+                    "locked"
+                );
+
+                button.querySelector(
+                    ".lock"
+                ).textContent =
+                    "🔓";
+
+            }
+
+
+            /*
+               ยังล็อก
+            */
+
+            else{
+
+                button.classList.add(
+                    "locked"
+                );
+
+                button.querySelector(
+                    ".lock"
+                ).textContent =
+                    "🔒";
+
+            }
+
+        }
+    );
+
+}
+
+
+/* =====================================================
+   รีเซ็ตความก้าวหน้า
+===================================================== */
+
+function resetProgress(){
+
+    const confirmReset =
+        confirm(
+            "ต้องการเริ่มความก้าวหน้าใหม่หรือไม่?"
+        );
+
+
+    if(!confirmReset){
+        return;
+    }
+
+
+    completedLevels = [];
+
+
+    localStorage.removeItem(
+        "multiplicationLevels"
+    );
+
+
+    updateLevels();
+
+}
+
+
+/* =====================================================
+   เริ่มต้น
+===================================================== */
+
+updateLevels();
+
+</script>
+
+</body>
+</html>

@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Math Learning Hub</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #e0f2fe 0%, #f0f9ff 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 35px;
+        }
+
+        h1 {
+            color: #1e293b;
+            font-size: 2.2rem;
+            margin-bottom: 10px;
+        }
+
+        p.subtitle {
+            color: #64748b;
+            font-size: 1.1rem;
+        }
+
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            width: 100%;
+            max-width: 1100px;
+        }
+
+        .card-btn {
+            background: #ffffff;
+            border-radius: 16px;
+            padding: 18px 24px;
+            text-decoration: none;
+            color: #334155;
+            font-size: 1.05rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.05), 
+                        0 2px 6px rgba(0, 0, 0, 0.04);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 1px solid #e2e8f0;
+        }
+
+        .card-btn:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 
+                        0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            border-color: #3b82f6;
+            color: #2563eb;
+        }
+
+        .icon {
+            width: 44px;
+            height: 44px;
+            background-color: #eff6ff;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.3rem;
+            flex-shrink: 0;
+        }
+
+        .card-btn:hover .icon {
+            background-color: #dbeafe;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>🎮 Math Learning Hub</h1>
+        <p class="subtitle">Select a topic below to start learning or take a quiz</p>
+    </header>
+
+    <main class="grid-container">
+
+        <a href="game-subtraction.html" class="card-btn">
+            <span class="icon">➖</span>
+            <span>Subtraction Game</span>
+        </a>
+
+        <a href="addition-game.html" class="card-btn">
+            <span class="icon">➕</span>
+            <span>Addition Game</span>
+        </a>
+
+        <a href="times-table-game.html" class="card-btn">
+            <span class="icon">✖️</span>
+            <span>Times Table Game</span>
+        </a>
+
+        <a href="vertical-mul-2x1.html" class="card-btn">
+            <span class="icon">📝</span>
+            <span>Vertical Multiplication 2x1</span>
+        </a>
+
+        <a href="vertical-mul-2x2.html" class="card-btn">
+            <span class="icon">📝</span>
+            <span>Vertical Multiplication 2x2</span>
+        </a>
+
+        <a href="vertical-mul-3x1.html" class="card-btn">
+            <span class="icon">📝</span>
+            <span>Vertical Multiplication 3x1</span>
+        </a>
+
+        <a href="multiplication-quiz-10.html" class="card-btn">
+            <span class="icon">🎯</span>
+            <span>Multiplication Quiz (10 Levels)</span>
+        </a>
+
+        <a href="division-quiz-10.html" class="card-btn">
+            <span class="icon">➗</span>
+            <span>Division Quiz (10 Levels)</span>
+        </a>
+
+        <a href="times-table-quiz.html" class="card-btn">
+            <span class="icon">🧠</span>
+            <span>Times Table Quiz</span>
+        </a>
+
+        <a href="fraction-addition.html" class="card-btn">
+            <span class="icon">🍕</span>
+            <span>Adding Fractions (Like Denominators)</span>
+        </a>
+
+        <a href="fraction-subtraction.html" class="card-btn">
+            <span class="icon">🍕</span>
+            <span>Subtracting Fractions (Like Denominators)</span>
+        </a>
+
+    </main>
+
+</body>
+</html>

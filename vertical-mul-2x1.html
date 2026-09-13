@@ -1,0 +1,1322 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>แบบทดสอบคณิตศาสตร์ - การคูณเลขสองหลักคูณกับเลขหนึ่งหลัก</title>
+  <style>
+    :root {
+      --purple: #6941d8;
+      --purple-dark: #5131bb;
+      --blue: #3f9ff1;
+      --yellow: #fff4b5;
+      --green: #09975a;
+      --green-bg: #dcfce7;
+      --red: #df2940;
+      --red-bg: #ffe3e7;
+      --ink: #34445f;
+      --muted: #687993;
+      --number-font: "Courier New", Courier, monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      min-height: 100vh;
+      margin: 0;
+      padding: 20px;
+      color: var(--ink);
+      font-family: Tahoma, "Sarabun", Arial, sans-serif;
+      background:
+        radial-gradient(circle at 8% 10%, #dbfbff 0, transparent 25%),
+        radial-gradient(circle at 92% 8%, #e8ddff 0, transparent 25%),
+        linear-gradient(135deg, #f4fbff, #f6f1ff 55%, #e9f7ff);
+    }
+
+    button {
+      border: none;
+      font-family: inherit;
+    }
+
+    .app {
+      width: min(100%, 1060px);
+      margin: 0 auto;
+    }
+
+    /* Header */
+    .header-card {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 22px;
+      align-items: center;
+      overflow: hidden;
+      padding: 25px 36px;
+      border-radius: 32px;
+      color: #ffffff;
+      background:
+        radial-gradient(circle at 50% 115%, rgba(255, 255, 255, 0.15) 0 68px, transparent 69px),
+        radial-gradient(circle at 101% 0%, rgba(255, 255, 255, 0.12) 0 110px, transparent 111px),
+        linear-gradient(115deg, #6738da, #7557ec 53%, #32a9e8);
+      box-shadow: 0 18px 34px rgba(80, 65, 180, 0.25);
+    }
+
+    .heading {
+      display: flex;
+      gap: 18px;
+      align-items: center;
+    }
+
+    .multiply-icon {
+      width: 72px;
+      height: 72px;
+      flex: 0 0 auto;
+      display: grid;
+      place-items: center;
+      border-radius: 20px;
+      color: #6840d7;
+      background: #ffffff;
+      font: 900 51px/1 var(--number-font);
+    }
+
+    .eyebrow {
+      margin: 0 0 5px;
+      font-size: 16px;
+      font-weight: 800;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(23px, 4vw, 34px);
+      line-height: 1.25;
+    }
+
+    .progress-area {
+      display: flex;
+      gap: 16px;
+      align-items: center;
+      margin-top: 14px;
+      font-size: 15px;
+      font-weight: 900;
+    }
+
+    .progress-track {
+      width: min(310px, 35vw);
+      height: 12px;
+      overflow: hidden;
+      border-radius: 99px;
+      background: rgba(44, 26, 128, 0.28);
+      box-shadow: inset 0 1px 2px rgba(32, 20, 97, 0.25);
+    }
+
+    .progress-bar {
+      width: 0%;
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, #fff39e, #ffd85a);
+      transition: width 0.3s ease;
+    }
+
+    .score-box {
+      min-width: 160px;
+      padding: 15px 19px;
+      border-radius: 18px;
+      color: #5536bd;
+      background: #ffffff;
+      text-align: center;
+      font-size: 17px;
+      font-weight: 900;
+      box-shadow: 0 5px 0 rgba(43, 50, 128, 0.12);
+    }
+
+    /* Main Card */
+    .main-card {
+      min-height: auto;
+      margin-top: 18px;
+      padding: 20px 32px 14px;
+      border-radius: 34px;
+      background: rgba(255, 255, 255, 0.93);
+      box-shadow: 0 20px 40px rgba(72, 91, 140, 0.13);
+    }
+
+    /* Start Page */
+    .start-view {
+      display: grid;
+      align-content: start;
+      padding: 4px 0 0;
+    }
+
+    .start-panel {
+      width: min(100%, 860px);
+      margin: 0 auto;
+      padding: 0 18px 8px;
+    }
+
+    .start-view h2 {
+      margin: 0 0 18px;
+      color: #5737c8;
+      text-align: center;
+      font-size: clamp(32px, 5vw, 48px);
+      font-weight: 900;
+      letter-spacing: -1px;
+    }
+
+    .setting-block {
+      margin-bottom: 18px;
+    }
+
+    .setting-title {
+      margin: 0 0 11px;
+      color: #40516d;
+      font-size: 19px;
+      font-weight: 900;
+    }
+
+    .option-group {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+    }
+
+    .option-btn {
+      min-height: 82px;
+      padding: 10px;
+      border: 2px solid transparent;
+      border-radius: 20px;
+      color: #52637e;
+      background: #edf2f8;
+      cursor: pointer;
+      transition: transform 0.16s ease, border-color 0.16s ease, background 0.16s ease;
+    }
+
+    .option-btn strong,
+    .option-btn small {
+      display: block;
+    }
+
+    .option-btn strong {
+      font-size: 20px;
+      font-weight: 900;
+    }
+
+    .option-btn small {
+      margin-top: 6px;
+      color: #3d4f78;
+      font: 900 14px/1.25 var(--number-font);
+    }
+
+    .option-btn:hover {
+      transform: translateY(-2px);
+      border-color: #b19aff;
+      background: #f4f0ff;
+    }
+
+    .option-btn.selected {
+      border-color: #6d43ec;
+      color: #5737c8;
+      background: #f0ebff;
+      box-shadow: 0 7px 15px rgba(102, 67, 226, 0.12);
+    }
+
+    .time-options .option-btn {
+      min-height: 63px;
+    }
+
+    .time-options .option-btn strong {
+      font-size: 21px;
+    }
+
+    .start-actions,
+    .summary-actions,
+    .quiz-actions {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 13px;
+      margin-top: 18px;
+     margin-bottom: 4px;
+    }
+
+    .action-btn {
+      min-width: 168px;
+      padding: 14px 22px;
+      border-radius: 16px;
+      color: #ffffff;
+      cursor: pointer;
+      font-size: 17px;
+      font-weight: 900;
+      box-shadow: 0 6px 0 rgba(46, 48, 105, 0.18);
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+
+    .action-btn:hover {
+      transform: translateY(-2px);
+    }
+
+    .action-btn:active {
+      transform: translateY(3px);
+      box-shadow: 0 2px 0 rgba(46, 48, 105, 0.18);
+    }
+
+    .start-btn {
+      background: linear-gradient(135deg, #7140ec, #438ef1);
+    }
+
+    .reset-btn {
+      color: #566780;
+      background: #eaf0f6;
+      box-shadow: none;
+    }
+
+    /* Quiz */
+    .quiz-view {
+      display: none;
+    }
+
+    .quiz-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 14px;
+      align-items: center;
+    }
+
+    .question-tag,
+    .timer {
+      padding: 10px 15px;
+      border-radius: 14px;
+      font-weight: 900;
+    }
+
+    .question-tag {
+      color: #5b38c8;
+      background: #f1ecff;
+    }
+
+    .timer {
+      color: #087b68;
+      background: #e4fff9;
+      font-family: var(--number-font);
+    }
+
+    .timer.urgent {
+      color: var(--red);
+      background: #fff0f2;
+      animation: timerPulse 0.75s infinite;
+    }
+
+    @keyframes timerPulse {
+      50% {
+        transform: scale(1.05);
+      }
+    }
+
+    .step-text {
+      min-height: 30px;
+      margin: 17px 0 10px;
+      color: #596a85;
+      text-align: center;
+      font-size: 16px;
+      font-weight: 900;
+    }
+
+    .quiz-layout {
+      display: grid;
+      grid-template-columns: minmax(280px, 1fr) 196px;
+      gap: 12px;
+      align-items: center;
+      max-width: 640px;
+      margin: 0 auto;
+    }
+
+    .work-card {
+      padding: 15px 12px;
+      border: 2px solid #eeeaff;
+      border-radius: 23px;
+      background: linear-gradient(145deg, #ffffff, #faf8ff);
+    }
+
+    .vertical-grid {
+      width: max-content;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 34px repeat(3, 60px);
+      grid-template-rows: 40px 61px 61px 8px 68px;
+      align-items: center;
+      justify-items: center;
+      font-family: var(--number-font);
+      font-weight: 900;
+    }
+
+    .carry-row,
+    .number-row,
+    .answer-row {
+      width: 100%;
+      display: grid;
+      grid-template-columns: repeat(3, 60px);
+      place-items: center;
+    }
+
+    .carry-row {
+      grid-column: 2 / 5;
+      grid-row: 1;
+      height: 100%;
+    }
+
+    .number-row {
+      grid-column: 2 / 5;
+      grid-row: 2;
+    }
+
+    .multiplier-row {
+      grid-column: 1 / 5;
+      grid-row: 3;
+      width: 100%;
+      display: grid;
+      grid-template-columns: 34px repeat(3, 60px);
+      place-items: center;
+      border-bottom: 4px solid #35435d;
+    }
+
+    .answer-row {
+      grid-column: 2 / 5;
+      grid-row: 5;
+    }
+
+    .multiply-sign {
+      color: #6d43ec;
+      font-size: 38px;
+      line-height: 1;
+    }
+
+    .math-digit {
+      color: #29364f;
+      font-size: 46px;
+      line-height: 1;
+    }
+
+    .input-cell {
+      width: 50px;
+      height: 54px;
+      display: grid;
+      place-items: center;
+      border: 3px solid #cfd7e7;
+      border-radius: 13px;
+      color: #273650;
+      background: #ffffff;
+      font: 900 39px/1 var(--number-font);
+      user-select: none;
+    }
+
+    .carry-cell {
+      width: 38px;
+      height: 36px;
+      border-width: 2px;
+      border-radius: 10px;
+      color: #5b38c8;
+      font-size: 26px;
+    }
+
+    .hidden-cell {
+      visibility: hidden;
+    }
+
+    .input-cell.active {
+      z-index: 2;
+      border-color: #7047e9;
+      background: var(--yellow);
+      box-shadow: 0 0 0 5px rgba(112, 71, 233, 0.18);
+      animation: cellPulse 1s infinite;
+    }
+
+    @keyframes cellPulse {
+      50% {
+        transform: scale(1.06);
+      }
+    }
+
+    .input-cell.correct {
+      border-color: var(--green);
+      color: var(--green);
+      background: var(--green-bg);
+      box-shadow: 0 0 0 4px rgba(9, 151, 90, 0.14);
+      opacity: 1;
+    }
+
+    .input-cell.wrong {
+      border-color: var(--red);
+      color: var(--red);
+      background: var(--red-bg);
+      box-shadow: 0 0 0 4px rgba(223, 41, 64, 0.12);
+      opacity: 1;
+    }
+
+    .keypad {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 7px;
+      padding: 10px;
+      border-radius: 18px;
+      background: #edf7ff;
+      box-shadow: inset 0 0 0 1px #d4eaff;
+    }
+
+    .keypad button {
+      min-height: 43px;
+      border-radius: 12px;
+      color: #34445e;
+      background: #ffffff;
+      box-shadow: 0 3px 0 #c9ddeb;
+      cursor: pointer;
+      font: 900 21px/1 var(--number-font);
+      transition: transform 0.12s, box-shadow 0.12s, background 0.12s;
+    }
+
+    .keypad button:hover {
+      color: #5737c8;
+      background: #f3efff;
+      transform: translateY(-2px);
+    }
+
+    .keypad button:active {
+      transform: translateY(2px);
+      box-shadow: 0 1px 0 #c9ddeb;
+    }
+
+    .keypad .delete-key {
+      color: #d6223b;
+      background: #fff0f2;
+      box-shadow: 0 3px 0 #f2c1ca;
+    }
+
+    .feedback {
+      min-height: 34px;
+      margin: 14px 0 0;
+      text-align: center;
+      font-size: 18px;
+      font-weight: 900;
+    }
+
+    .feedback.correct {
+      color: var(--green);
+    }
+
+    .feedback.wrong {
+      color: var(--red);
+    }
+
+    /* Summary */
+    .summary-view {
+      min-height: 450px;
+      display: none;
+      place-items: center;
+      align-content: center;
+      text-align: center;
+    }
+
+    .summary-emoji {
+      font-size: 70px;
+    }
+
+    .summary-view h2 {
+      margin: 16px 0 8px;
+      color: #5737c8;
+      font-size: clamp(29px, 5vw, 40px);
+    }
+
+    .result-score {
+      margin: 14px 0;
+      color: #5535c3;
+      font: 900 clamp(55px, 12vw, 82px)/1 var(--number-font);
+    }
+
+    .summary-view p {
+      margin: 0;
+      color: #657691;
+      font-size: 18px;
+      font-weight: 800;
+    }
+
+    .credit {
+      margin: 17px 0 0;
+      color: #9aa7b9;
+      text-align: center;
+      font-size: 10px;
+      line-height: 1.55;
+      opacity: 0.72;
+    }
+
+    @media (max-width: 700px) {
+      body {
+        padding: 12px;
+      }
+
+      .header-card {
+        grid-template-columns: 1fr;
+        padding: 20px;
+      }
+
+      .score-box {
+        width: 100%;
+      }
+
+      .progress-track {
+        width: min(230px, 48vw);
+      }
+
+      .main-card {
+        min-height: auto;
+        margin-top: 16px;
+        padding: 16px 12px 12px;
+        border-radius: 27px;
+      }
+
+      .start-panel {
+        padding-bottom: 0;
+      }
+
+      .quiz-layout {
+        grid-template-columns: 1fr;
+        gap: 7px;
+      }
+
+      .keypad {
+        width: min(100%, 300px);
+        margin: 0 auto;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .heading {
+        gap: 11px;
+      }
+
+      .multiply-icon {
+        width: 55px;
+        height: 55px;
+        border-radius: 17px;
+        font-size: 40px;
+      }
+
+      .eyebrow {
+        font-size: 13px;
+      }
+
+      h1 {
+        font-size: 20px;
+      }
+
+      .progress-area {
+        gap: 8px;
+        font-size: 13px;
+      }
+
+      .start-view h2 {
+        margin-bottom: 16px;
+        font-size: 37px;
+      }
+
+      .setting-block {
+        margin-bottom: 15px;
+      }
+
+      .setting-title {
+        font-size: 17px;
+      }
+
+      .option-group {
+        gap: 9px;
+      }
+
+      .option-btn {
+        min-height: 72px;
+        padding: 8px 4px;
+        border-radius: 17px;
+      }
+
+      .option-btn strong {
+        font-size: 16px;
+      }
+
+      .option-btn small {
+        margin-top: 4px;
+        font-size: 10px;
+      }
+
+      .time-options .option-btn {
+        min-height: 56px;
+      }
+
+      .time-options .option-btn strong {
+        font-size: 16px;
+      }
+
+      .start-actions {
+        margin-top: 14px;
+        margin-bottom: 3px;
+      }
+
+      .action-btn {
+        min-width: 135px;
+        padding: 13px 14px;
+        font-size: 16px;
+      }
+
+      .vertical-grid {
+        grid-template-columns: 28px repeat(3, 52px);
+        grid-template-rows: 39px 57px 57px 8px 65px;
+      }
+
+      .carry-row,
+      .number-row,
+      .answer-row {
+        grid-template-columns: repeat(3, 52px);
+      }
+
+      .multiplier-row {
+        grid-template-columns: 28px repeat(3, 52px);
+      }
+
+      .math-digit {
+        font-size: 40px;
+      }
+
+      .input-cell {
+        width: 44px;
+        height: 51px;
+        font-size: 34px;
+      }
+
+      .keypad {
+        width: min(100%, 280px);
+      }
+
+      .keypad button {
+        min-height: 40px;
+        font-size: 19px;
+      }
+    }
+
+    @media (max-width: 365px) {
+      .option-btn strong {
+        font-size: 14px;
+      }
+
+      .option-btn small {
+        font-size: 8px;
+      }
+
+      .action-btn {
+        min-width: 120px;
+        font-size: 14px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header class="header-card">
+      <div>
+        <div class="heading">
+          <div class="multiply-icon">×</div>
+          <div>
+            <p class="eyebrow">แบบทดสอบคณิตศาสตร์</p>
+            <h1>การคูณเลขสองหลักคูณกับเลขหนึ่งหลัก</h1>
+          </div>
+        </div>
+
+        <div class="progress-area">
+          <span id="progressText">ข้อ 0 / 10</span>
+          <div class="progress-track">
+            <div id="progressBar" class="progress-bar"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="score-box">🏆 คะแนน <span id="scoreDisplay">0</span></div>
+    </header>
+
+    <main class="main-card">
+      <section id="startView" class="start-view">
+        <div class="start-panel">
+          <h2>พร้อมแล้วหรือยัง?</h2>
+
+          <div class="setting-block">
+            <p class="setting-title">เลือกระดับความยาก</p>
+            <div class="option-group">
+              <button class="option-btn selected" data-level="easy">
+                <strong>ง่าย</strong>
+                <small>10–49 × 1–4</small>
+              </button>
+              <button class="option-btn" data-level="medium">
+                <strong>กลาง</strong>
+                <small>20–69 × 3–6</small>
+              </button>
+              <button class="option-btn" data-level="hard">
+                <strong>ยาก</strong>
+                <small>50–99 × 5–9</small>
+              </button>
+            </div>
+          </div>
+
+          <div class="setting-block">
+            <p class="setting-title">เลือกเวลาในแต่ละข้อ</p>
+            <div class="option-group time-options">
+              <button class="option-btn" data-time="30">
+                <strong>30 วินาที</strong>
+              </button>
+              <button class="option-btn selected" data-time="60">
+                <strong>60 วินาที</strong>
+              </button>
+              <button class="option-btn" data-time="90">
+                <strong>90 วินาที</strong>
+              </button>
+            </div>
+          </div>
+
+          <div class="start-actions">
+            <button id="startButton" class="action-btn start-btn">▶ เริ่มทดสอบ</button>
+            <button id="resetButton" class="action-btn reset-btn">↻ เริ่มใหม่</button>
+          </div>
+        </div>
+      </section>
+
+      <section id="quizView" class="quiz-view">
+        <div class="quiz-top">
+          <div id="questionLabel" class="question-tag">ข้อที่ 1</div>
+          <div id="timer" class="timer">⏱ 01:00</div>
+        </div>
+
+        <div id="stepText" class="step-text">ขั้นที่ 1 • เติมคำตอบหลักหน่วย</div>
+
+        <div class="quiz-layout">
+          <div class="work-card">
+            <div class="vertical-grid">
+              <div id="carryRow" class="carry-row"></div>
+              <div id="numberRow" class="number-row"></div>
+
+              <div class="multiplier-row">
+                <span class="multiply-sign">×</span>
+                <span class="math-digit hidden-cell"></span>
+                <span class="math-digit hidden-cell"></span>
+                <span id="multiplierDigit" class="math-digit">1</span>
+              </div>
+
+              <div id="answerRow" class="answer-row"></div>
+            </div>
+          </div>
+
+          <div class="keypad">
+            <button data-number="1">1</button>
+            <button data-number="2">2</button>
+            <button data-number="3">3</button>
+            <button data-number="4">4</button>
+            <button data-number="5">5</button>
+            <button data-number="6">6</button>
+            <button data-number="7">7</button>
+            <button data-number="8">8</button>
+            <button data-number="9">9</button>
+            <button id="deleteButton" class="delete-key">⌫</button>
+            <button data-number="0">0</button>
+            <button style="visibility: hidden;" tabindex="-1">.</button>
+          </div>
+        </div>
+
+        <div id="feedback" class="feedback"></div>
+
+        <div class="quiz-actions">
+          <button id="quizResetButton" class="action-btn reset-btn">↻ เริ่มใหม่</button>
+        </div>
+      </section>
+
+      <section id="summaryView" class="summary-view">
+        <div class="summary-emoji">🏆🎉</div>
+        <h2>ทำแบบทดสอบครบแล้ว!</h2>
+        <div id="finalScore" class="result-score">0 / 10</div>
+        <p id="finalMessage"></p>
+
+        <div class="summary-actions">
+          <button id="summaryStartButton" class="action-btn start-btn">▶ เริ่มทดสอบใหม่</button>
+          <button id="summaryResetButton" class="action-btn reset-btn">↻ เริ่มใหม่</button>
+        </div>
+      </section>
+    </main>
+
+    <p class="credit">
+      สร้างสรรค์โดย นายวรพันธ์ บัวผัน · ครูโรงเรียนสุเหร่าคลองหนึ่ง (มานะราษฎร์บำรุง) · เขตคลองสามวา กรุงเทพมหานคร
+    </p>
+  </div>
+
+  <script>
+    const TOTAL_QUESTIONS = 10;
+
+    let selectedLevel = "easy";
+    let selectedTime = 60;
+    let questions = [];
+    let currentQuestionIndex = 0;
+    let score = 0;
+    let currentData = null;
+    let inputSequence = [];
+    let currentStepIndex = 0;
+    let timerSeconds = 60;
+    let timerInterval = null;
+    let isLocked = false;
+    let gameStarted = false;
+
+    const $ = (id) => document.getElementById(id);
+
+    function randomNumber(min, max) {
+      return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+
+    function getLevelRange() {
+      const ranges = {
+        easy: { minA: 10, maxA: 49, minB: 1, maxB: 4 },
+        medium: { minA: 20, maxA: 69, minB: 3, maxB: 6 },
+        hard: { minA: 50, maxA: 99, minB: 5, maxB: 9 }
+      };
+
+      return ranges[selectedLevel];
+    }
+
+    function generateQuestions() {
+      const questionList = [];
+      const usedQuestions = new Set();
+      const range = getLevelRange();
+
+      while (questionList.length < TOTAL_QUESTIONS) {
+        const a = randomNumber(range.minA, range.maxA);
+        const b = randomNumber(range.minB, range.maxB);
+        const key = `${a}x${b}`;
+
+        if (!usedQuestions.has(key)) {
+          usedQuestions.add(key);
+          questionList.push({ a, b });
+        }
+      }
+
+      return questionList;
+    }
+
+    function calculateSteps(a, b) {
+      const tens = Math.floor(a / 10);
+      const ones = a % 10;
+
+      const onesTotal = ones * b;
+      const answerOnes = onesTotal % 10;
+      const carryToTens = Math.floor(onesTotal / 10);
+
+      const tensTotal = (tens * b) + carryToTens;
+      const answerTens = tensTotal % 10;
+      const answerHundreds = Math.floor(tensTotal / 10);
+
+      return {
+        a,
+        b,
+        tens,
+        ones,
+        answer: a * b,
+        answerOnes,
+        answerTens,
+        answerHundreds,
+        carryToTens
+      };
+    }
+
+    function updateProgress() {
+      const shown = gameStarted
+        ? Math.min(currentQuestionIndex + 1, TOTAL_QUESTIONS)
+        : 0;
+
+      const completed = gameStarted
+        ? Math.min(currentQuestionIndex, TOTAL_QUESTIONS)
+        : 0;
+
+      $("progressText").textContent = `ข้อ ${shown} / ${TOTAL_QUESTIONS}`;
+      $("progressBar").style.width = `${(completed / TOTAL_QUESTIONS) * 100}%`;
+    }
+
+    function updateScore() {
+      $("scoreDisplay").textContent = score;
+    }
+
+    function createInputCell(id, className = "") {
+      const element = document.createElement("div");
+      element.id = id;
+      element.className = `input-cell ${className}`;
+      return element;
+    }
+
+    function renderNumberRow() {
+      const row = $("numberRow");
+      row.innerHTML = "";
+
+      const emptyHundreds = document.createElement("span");
+      emptyHundreds.className = "math-digit hidden-cell";
+
+      const tens = document.createElement("span");
+      tens.className = "math-digit";
+      tens.textContent = currentData.tens;
+
+      const ones = document.createElement("span");
+      ones.className = "math-digit";
+      ones.textContent = currentData.ones;
+
+      row.append(emptyHundreds, tens, ones);
+    }
+
+    function renderCarryRow() {
+      const row = $("carryRow");
+      row.innerHTML = "";
+
+      const emptyHundreds = createInputCell("carryHundreds", "carry-cell hidden-cell");
+      const carryTens = createInputCell("carryTens", "carry-cell");
+      const emptyOnes = createInputCell("carryOnes", "carry-cell hidden-cell");
+
+      if (currentData.carryToTens === 0) {
+        carryTens.classList.add("hidden-cell");
+      }
+
+      row.append(emptyHundreds, carryTens, emptyOnes);
+    }
+
+    function renderAnswerRow() {
+      const row = $("answerRow");
+      row.innerHTML = "";
+
+      const hundreds = createInputCell("answerHundreds");
+      const tens = createInputCell("answerTens");
+      const ones = createInputCell("answerOnes");
+
+      if (currentData.answerHundreds === 0) {
+        hundreds.classList.add("hidden-cell");
+      }
+
+      row.append(hundreds, tens, ones);
+    }
+
+    function buildInputSequence() {
+      inputSequence = [
+        {
+          id: "answerOnes",
+          expected: currentData.answerOnes,
+          label: "ขั้นที่ 1 • เติมคำตอบหลักหน่วย"
+        }
+      ];
+
+      if (currentData.carryToTens > 0) {
+        inputSequence.push({
+          id: "carryTens",
+          expected: currentData.carryToTens,
+          label: "✦ เติมตัวทดไปหลักสิบ"
+        });
+      }
+
+      inputSequence.push({
+        id: "answerTens",
+        expected: currentData.answerTens,
+        label: "ขั้นที่ 2 • เติมคำตอบหลักสิบ"
+      });
+
+      if (currentData.answerHundreds > 0) {
+        inputSequence.push({
+          id: "answerHundreds",
+          expected: currentData.answerHundreds,
+          label: "ขั้นที่ 3 • เติมคำตอบหลักร้อย"
+        });
+      }
+    }
+
+    function focusCurrentStep() {
+      document.querySelectorAll(".input-cell").forEach((cell) => {
+        cell.classList.remove("active");
+      });
+
+      if (currentStepIndex < inputSequence.length && !isLocked) {
+        const step = inputSequence[currentStepIndex];
+        $(step.id).classList.add("active");
+        $("stepText").textContent = step.label;
+      }
+    }
+
+    function renderQuestion() {
+      isLocked = false;
+
+      const question = questions[currentQuestionIndex];
+      currentData = calculateSteps(question.a, question.b);
+
+      $("questionLabel").textContent = `ข้อที่ ${currentQuestionIndex + 1}`;
+      $("multiplierDigit").textContent = currentData.b;
+      $("feedback").textContent = "";
+      $("feedback").className = "feedback";
+
+      renderNumberRow();
+      renderCarryRow();
+      renderAnswerRow();
+      buildInputSequence();
+
+      currentStepIndex = 0;
+      focusCurrentStep();
+      updateProgress();
+      startTimer();
+    }
+
+    function pressNumber(number) {
+      if (!gameStarted || isLocked || currentStepIndex >= inputSequence.length) return;
+
+      const step = inputSequence[currentStepIndex];
+      const cell = $(step.id);
+
+      if (cell.textContent !== "") return;
+
+      cell.textContent = number;
+      cell.classList.remove("active");
+      currentStepIndex++;
+
+      if (currentStepIndex < inputSequence.length) {
+        focusCurrentStep();
+      } else {
+        $("stepText").textContent = "กำลังตรวจคำตอบ...";
+        setTimeout(checkQuestion, 180);
+      }
+    }
+
+    function deleteNumber() {
+      if (!gameStarted || isLocked || inputSequence.length === 0) return;
+
+      if (currentStepIndex >= inputSequence.length) {
+        currentStepIndex = inputSequence.length - 1;
+      }
+
+      let cell = $(inputSequence[currentStepIndex].id);
+
+      if (cell.textContent !== "") {
+        cell.textContent = "";
+      } else if (currentStepIndex > 0) {
+        currentStepIndex--;
+        cell = $(inputSequence[currentStepIndex].id);
+        cell.textContent = "";
+      }
+
+      focusCurrentStep();
+    }
+
+    function checkQuestion() {
+      if (isLocked) return;
+
+      const completed = inputSequence.every((step) => {
+        return $(step.id).textContent !== "";
+      });
+
+      if (!completed) return;
+
+      isLocked = true;
+      clearInterval(timerInterval);
+
+      const enteredAnswer = [
+        $("answerHundreds").classList.contains("hidden-cell")
+          ? ""
+          : $("answerHundreds").textContent,
+        $("answerTens").textContent,
+        $("answerOnes").textContent
+      ].join("");
+
+      const answerCorrect = Number(enteredAnswer) === currentData.answer;
+
+      const carriesCorrect = inputSequence.every((step) => {
+        return Number($(step.id).textContent) === step.expected;
+      });
+
+      const isCorrect = answerCorrect && carriesCorrect;
+
+      document.querySelectorAll(".input-cell:not(.hidden-cell)").forEach((cell) => {
+        cell.classList.remove("active");
+        cell.classList.add(isCorrect ? "correct" : "wrong");
+      });
+
+      if (isCorrect) {
+        score++;
+        updateScore();
+        $("feedback").textContent = "✓ ถูกต้อง! เก่งมาก 🎉";
+        $("feedback").className = "feedback correct";
+      } else {
+        $("feedback").textContent = "✕ ยังไม่ถูกนะ";
+        $("feedback").className = "feedback wrong";
+      }
+
+      setTimeout(nextQuestion, 1500);
+    }
+
+    function updateTimer() {
+      const safeTime = Math.max(0, timerSeconds);
+      const minutes = String(Math.floor(safeTime / 60)).padStart(2, "0");
+      const seconds = String(safeTime % 60).padStart(2, "0");
+
+      $("timer").textContent = `⏱ ${minutes}:${seconds}`;
+      $("timer").classList.toggle("urgent", safeTime <= 10);
+    }
+
+    function startTimer() {
+      clearInterval(timerInterval);
+
+      timerSeconds = selectedTime;
+      updateTimer();
+
+      timerInterval = setInterval(() => {
+        timerSeconds--;
+        updateTimer();
+
+        if (timerSeconds <= 0) {
+          timeOutQuestion();
+        }
+      }, 1000);
+    }
+
+    function timeOutQuestion() {
+      if (isLocked) return;
+
+      isLocked = true;
+      clearInterval(timerInterval);
+
+      document.querySelectorAll(".input-cell:not(.hidden-cell)").forEach((cell) => {
+        cell.classList.remove("active");
+        cell.classList.add("wrong");
+      });
+
+      $("stepText").textContent = "หมดเวลาแล้ว";
+      $("feedback").textContent = "✕ หมดเวลา!";
+      $("feedback").className = "feedback wrong";
+
+      setTimeout(nextQuestion, 1500);
+    }
+
+    function nextQuestion() {
+      currentQuestionIndex++;
+
+      if (currentQuestionIndex < TOTAL_QUESTIONS) {
+        renderQuestion();
+      } else {
+        finishTest();
+      }
+    }
+
+    function finishTest() {
+      clearInterval(timerInterval);
+
+      $("quizView").style.display = "none";
+      $("summaryView").style.display = "grid";
+      $("finalScore").textContent = `${score} / ${TOTAL_QUESTIONS}`;
+
+      if (score === 10) {
+        $("finalMessage").textContent = "ยอดเยี่ยมมาก! ถูกทุกข้อเลย 🏆";
+      } else if (score >= 7) {
+        $("finalMessage").textContent = "เก่งมาก! ทำได้ดีมาก 🌟";
+      } else if (score >= 5) {
+        $("finalMessage").textContent = "ทำได้ดีแล้ว ฝึกอีกนิดจะเก่งขึ้นอีก 💪";
+      } else {
+        $("finalMessage").textContent = "ไม่เป็นไร ลองใหม่อีกครั้งนะ 😊";
+      }
+
+      $("progressText").textContent = "ข้อ 10 / 10";
+      $("progressBar").style.width = "100%";
+    }
+
+    function startTest() {
+      clearInterval(timerInterval);
+
+      questions = generateQuestions();
+      currentQuestionIndex = 0;
+      score = 0;
+      gameStarted = true;
+
+      updateScore();
+
+      $("startView").style.display = "none";
+      $("summaryView").style.display = "none";
+      $("quizView").style.display = "block";
+
+      renderQuestion();
+    }
+
+    function resetTest() {
+      clearInterval(timerInterval);
+
+      questions = [];
+      currentQuestionIndex = 0;
+      score = 0;
+      currentData = null;
+      inputSequence = [];
+      currentStepIndex = 0;
+      isLocked = false;
+      gameStarted = false;
+
+      $("startView").style.display = "grid";
+      $("quizView").style.display = "none";
+      $("summaryView").style.display = "none";
+
+      updateScore();
+      $("progressText").textContent = `ข้อ 0 / ${TOTAL_QUESTIONS}`;
+      $("progressBar").style.width = "0%";
+
+      const minutes = String(Math.floor(selectedTime / 60)).padStart(2, "0");
+      const seconds = String(selectedTime % 60).padStart(2, "0");
+
+      $("timer").textContent = `⏱ ${minutes}:${seconds}`;
+      $("timer").classList.remove("urgent");
+    }
+
+    document.querySelectorAll("[data-level]").forEach((button) => {
+      button.addEventListener("click", () => {
+        selectedLevel = button.dataset.level;
+
+        document.querySelectorAll("[data-level]").forEach((item) => {
+          item.classList.remove("selected");
+        });
+
+        button.classList.add("selected");
+      });
+    });
+
+    document.querySelectorAll("[data-time]").forEach((button) => {
+      button.addEventListener("click", () => {
+        selectedTime = Number(button.dataset.time);
+
+        document.querySelectorAll("[data-time]").forEach((item) => {
+          item.classList.remove("selected");
+        });
+
+        button.classList.add("selected");
+      });
+    });
+
+    document.querySelectorAll("[data-number]").forEach((button) => {
+      button.addEventListener("click", () => {
+        pressNumber(button.dataset.number);
+      });
+    });
+
+    $("deleteButton").addEventListener("click", deleteNumber);
+    $("startButton").addEventListener("click", startTest);
+    $("resetButton").addEventListener("click", resetTest);
+    $("quizResetButton").addEventListener("click", resetTest);
+    $("summaryStartButton").addEventListener("click", startTest);
+    $("summaryResetButton").addEventListener("click", resetTest);
+
+    document.addEventListener("keydown", (event) => {
+      if (!gameStarted || isLocked) return;
+
+      if (/^[0-9]$/.test(event.key)) {
+        event.preventDefault();
+        pressNumber(event.key);
+      }
+
+      if (event.key === "Backspace" || event.key === "Delete") {
+        event.preventDefault();
+        deleteNumber();
+      }
+    });
+
+    resetTest();
+  </script>
+</body>
+</html>

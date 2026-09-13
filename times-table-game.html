@@ -1,0 +1,1150 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>สูตรคูณหรรษา - เกมแตะผลคูณ AI</title>
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            pink: '#FF4B91',
+                            orange: '#FF763B',
+                            yellow: '#FFCD38',
+                            green: '#00D26A',
+                            purple: '#8B5CF6',
+                            blue: '#00A8FF',
+                            dark: '#1E1B4B'
+                        }
+                    },
+                    fontFamily: {
+                        prompt: ['Prompt', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Google Fonts: Prompt -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Canvas Confetti Library -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+    <!-- TensorFlow.js and MoveNet Pose Detection -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-core"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-converter"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-webgl"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/pose-detection"></script>
+
+    <!-- Custom CSS Styles -->
+    <style>
+        * {
+            user-select: none;
+            -webkit-user-select: none;
+            box-sizing: border-box;
+            font-family: 'Prompt', sans-serif;
+        }
+
+        body {
+            background-color: #0F172A;
+            color: #F8FAFC;
+            overflow: hidden;
+            touch-action: manipulation;
+        }
+
+        /* Mirror video and canvas horizontally for natural user interaction */
+        .mirror-x {
+            transform: scaleX(-1);
+        }
+
+        @keyframes pulse-glow {
+            0%, 100% { transform: scale(1); filter: drop-shadow(0 0 12px rgba(255, 205, 56, 0.6)); }
+            50% { transform: scale(1.05); filter: drop-shadow(0 0 25px rgba(255, 205, 56, 0.9)); }
+        }
+
+        @keyframes float-bubble {
+            0% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-8px) rotate(2deg); }
+            100% { transform: translateY(0px) rotate(0deg); }
+        }
+
+        .animate-float {
+            animation: float-bubble 3s ease-in-out infinite;
+        }
+
+        .animate-glow {
+            animation: pulse-glow 2s infinite;
+        }
+
+        /* Target options touch pulse effect */
+        .option-card {
+            transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .text-stroke-dark {
+            -webkit-text-stroke: 3px #020617;
+            text-shadow: 0 4px 12px rgba(0, 0, 0, 0.9), 0 0 20px rgba(0, 0, 0, 0.8);
+        }
+
+        .option-card.touching {
+            transform: scale(1.15) !important;
+            border-color: #00D26A !important;
+            box-shadow: 0 0 30px #00D26A, inset 0 0 15px #00D26A !important;
+        }
+
+        /* Glassmorphic card styling */
+        .glass-panel {
+            background: rgba(30, 27, 75, 0.75);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 2px solid rgba(255, 255, 255, 0.15);
+        }
+
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 8px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.6);
+            border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #FF4B91;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body class="w-screen h-screen relative flex flex-col justify-between items-center overflow-hidden">
+
+    <!-- Video and Overlay Canvas Container -->
+    <div id="viewport-container" class="absolute inset-0 w-full h-full bg-slate-950 overflow-hidden">
+        <!-- Web Camera Feed -->
+        <video id="webcam" class="absolute inset-0 w-full h-full object-cover mirror-x hidden" playsinline muted></video>
+        <!-- Canvas for AI Tracking Pose, Target Bubbles & VFX -->
+        <canvas id="game-canvas" class="absolute inset-0 w-full h-full object-cover z-10"></canvas>
+    </div>
+
+    <!-- MAIN HEADER HUD (Always Visible during gameplay) -->
+    <header id="game-hud" class="relative z-20 w-full px-4 pt-2 pb-1 flex justify-between items-center hidden pointer-events-none">
+        <!-- Left HUD: Score & Taps Counter -->
+        <div class="flex items-center gap-3">
+            <div class="glass-panel px-4 py-2 rounded-2xl flex items-center gap-3 shadow-lg border-brand-pink/40 pointer-events-auto">
+                <div class="w-10 h-10 rounded-xl bg-brand-pink flex items-center justify-center text-white text-xl shadow-md">
+                    <i class="fa-solid fa-star animate-spin-slow"></i>
+                </div>
+                <div>
+                    <span class="text-xs text-pink-200 font-semibold uppercase block tracking-wider">คะแนนรวม</span>
+                    <span id="score-display" class="text-2xl font-black text-yellow-300 drop-shadow">0</span>
+                </div>
+            </div>
+
+            <div class="glass-panel px-4 py-2 rounded-2xl flex items-center gap-3 shadow-lg border-brand-blue/40 pointer-events-auto hidden md:flex">
+                <div class="w-10 h-10 rounded-xl bg-brand-blue flex items-center justify-center text-white text-lg shadow-md">
+                    <i class="fa-solid fa-bullseye"></i>
+                </div>
+                <div>
+                    <span class="text-xs text-blue-200 font-semibold block tracking-wider">แตะสำเร็จ</span>
+                    <span id="taps-display" class="text-xl font-bold text-white">0</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Center HUD: Question Counter / Mode Badge -->
+        <div class="glass-panel px-4 py-1.5 rounded-2xl flex flex-col items-center shadow-lg border-brand-yellow/40 pointer-events-auto">
+            <span id="question-tracker" class="text-xs md:text-sm text-yellow-300 font-extrabold tracking-widest uppercase">ข้อที่ 1 / 10</span>
+            <span id="bonus-status" class="text-xs font-black text-brand-yellow hidden animate-bounce">
+                <i class="fa-solid fa-bolt text-yellow-300"></i> BONUS ROUND!
+            </span>
+        </div>
+
+        <!-- Right HUD: Timer Countdown & Exit Button -->
+        <div class="flex items-center gap-3">
+            <div id="timer-box" class="glass-panel px-5 py-2 rounded-2xl flex items-center gap-3 shadow-lg border-emerald-400/40 pointer-events-auto">
+                <div class="w-10 h-10 rounded-xl bg-emerald-500 flex items-center justify-center text-white text-lg shadow-md">
+                    <i class="fa-solid fa-clock"></i>
+                </div>
+                <div>
+                    <span class="text-xs text-emerald-200 font-semibold uppercase block tracking-wider">เหลือเวลา</span>
+                    <span id="timer-display" class="text-2xl font-black text-emerald-300 drop-shadow">60s</span>
+                </div>
+            </div>
+
+            <button id="btn-pause" onclick="togglePauseModal()" class="glass-panel w-12 h-12 rounded-2xl flex items-center justify-center text-white hover:bg-slate-700/80 transition-all pointer-events-auto active:scale-95">
+                <i class="fa-solid fa-gear text-lg"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- START MENU (Initial Screen) -->
+    <div id="start-menu" class="absolute inset-0 z-30 flex items-center justify-center p-4">
+        <div class="glass-panel rounded-3xl p-6 md:p-8 max-w-lg w-full text-center shadow-2xl border-2 border-brand-pink/50 bg-slate-900/90">
+            <h1 class="text-4xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 via-pink-400 to-cyan-300 mb-2 leading-tight">
+                สูตรคูณหรรษา
+            </h1>
+            <p class="text-slate-300 text-sm md:text-base font-medium mb-6">
+                เกมแตะผลคูณ Real-Time ตอบคำถามโดยใช้ท่าทางมือผ่านกล้อง!
+            </p>
+
+            <!-- Menu Action Buttons -->
+            <div class="space-y-3 max-w-md mx-auto">
+                <button onclick="startGame()" class="w-full py-4 px-6 rounded-2xl bg-gradient-to-r from-emerald-400 via-teal-500 to-green-500 text-slate-950 font-black text-xl shadow-xl hover:shadow-emerald-500/40 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-3">
+                    <i class="fa-solid fa-circle-play text-2xl"></i> เริ่มเล่นเกมทันที
+                </button>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <button onclick="openTeacherModal()" class="py-3 px-4 rounded-xl bg-slate-800/90 border border-purple-500/40 text-purple-200 font-bold hover:bg-purple-900/40 transition-all flex items-center justify-center gap-2 text-sm">
+                        <i class="fa-solid fa-chalkboard-user text-purple-400"></i> โหมดครู / ตั้งค่า
+                    </button>
+                    <button onclick="openLeaderboardModal()" class="py-3 px-4 rounded-xl bg-slate-800/90 border border-yellow-500/40 text-yellow-200 font-bold hover:bg-yellow-900/40 transition-all flex items-center justify-center gap-2 text-sm">
+                        <i class="fa-solid fa-trophy text-yellow-400"></i> ตารางคะแนน
+                    </button>
+                </div>
+            </div>
+
+            <!-- Instructions Box -->
+            <div class="mt-6 p-4 rounded-2xl bg-slate-900/80 border border-slate-800 text-left text-xs md:text-sm space-y-2 text-slate-300">
+                <div class="font-bold text-amber-300 flex items-center gap-2">
+                    <i class="fa-solid fa-circle-info"></i> วิธีการเล่นง่ายๆ:
+                </div>
+                <ul class="list-disc list-inside space-y-1 text-slate-400">
+                    <li>อนุญาตการใช้งานกล้องเว็บแคม</li>
+                    <li>ยืนให้อยู่ในกรอบภาพ ยื่นมือซ้ายหรือมือขวาขึ้นมา</li>
+                    <li>นำมือไปแตะคำตอบที่ถูกต้องบนหน้าจอ</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- FLOATING QUESTION BOARD (Active during gameplay - Anchored at Bottom) -->
+    <div id="question-board-container" class="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 w-full max-w-xl md:max-w-2xl px-4 pointer-events-none hidden text-center">
+        <div id="question-card" class="relative glass-panel rounded-3xl p-4 md:p-6 shadow-2xl border-4 border-yellow-400/60 bg-gradient-to-b from-purple-950/90 via-slate-900/90 to-slate-950/95 transform transition-all duration-300">
+            <div id="bonus-banner" class="hidden mb-2 bg-gradient-to-r from-yellow-500 via-red-500 to-pink-500 text-white font-black py-1 px-4 rounded-full text-sm md:text-base inline-flex items-center gap-2 shadow-lg animate-pulse">
+                <i class="fa-solid fa-fire"></i> รอบโบนัสคูณ 2 เท่า! (ภายใน 10 วินาที)
+            </div>
+            
+            <h2 id="question-text" class="text-5xl md:text-7xl font-black text-white drop-shadow-[0_0_15px_rgba(255,255,255,0.5)]">
+                2 × 2 = ?
+            </h2>
+        </div>
+    </div>
+
+    <!-- TEACHER MODE / SETTINGS MODAL -->
+    <div id="teacher-modal" class="fixed inset-0 z-40 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 hidden">
+        <div class="max-w-lg w-full glass-panel rounded-3xl p-6 shadow-2xl border-2 border-purple-500/40 text-left relative max-h-[90vh] overflow-y-auto custom-scrollbar">
+            <div class="flex justify-between items-center mb-5 pb-3 border-b border-slate-700/80">
+                <h3 class="text-2xl font-black text-purple-300 flex items-center gap-2">
+                    <i class="fa-solid fa-sliders text-purple-400"></i> ตั้งค่าโหมดครู (Teacher Config)
+                </h3>
+                <button onclick="closeTeacherModal()" class="w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 flex items-center justify-center text-slate-400 hover:text-white">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <div class="space-y-5">
+                <!-- Difficulty Selection -->
+                <div>
+                    <label class="block text-sm font-bold text-slate-200 mb-2">ระดับความยาก (แม่สูตรคูณ)</label>
+                    <div class="grid grid-cols-2 gap-3">
+                        <label class="flex items-center gap-3 p-3 rounded-xl border border-slate-700 bg-slate-800/60 cursor-pointer hover:border-emerald-400 transition-all">
+                            <input type="radio" name="difficulty" value="easy" checked class="accent-emerald-400 w-4 h-4">
+                            <div>
+                                <span class="font-bold text-emerald-400 block text-sm">ง่าย (แม่ 2 - 5)</span>
+                                <span class="text-xs text-slate-400">เหมาะกับเริ่มต้น</span>
+                            </div>
+                        </label>
+                        <label class="flex items-center gap-3 p-3 rounded-xl border border-slate-700 bg-slate-800/60 cursor-pointer hover:border-pink-500 transition-all">
+                            <input type="radio" name="difficulty" value="hard" class="accent-pink-500 w-4 h-4">
+                            <div>
+                                <span class="font-bold text-pink-400 block text-sm">ยาก (แม่ 6 - 12)</span>
+                                <span class="text-xs text-slate-400">ท้าทายประถมปลาย</span>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Custom Time Limit -->
+                <div>
+                    <label class="block text-sm font-bold text-slate-200 mb-2">เวลาแข่งขันต่อรอบ (วินาที)</label>
+                    <select id="config-time" class="w-full p-3 rounded-xl bg-slate-800 border border-slate-700 text-white font-bold focus:border-purple-400 outline-none">
+                        <option value="30">30 วินาที (แบบเร่งด่วน)</option>
+                        <option value="60" selected>60 วินาที (มาตรฐาน)</option>
+                        <option value="90">90 วินาที (ผ่อนคลาย)</option>
+                        <option value="120">120 วินาที (เน้นฝึกซ้อม)</option>
+                    </select>
+                </div>
+
+                <!-- Custom Option Bubble Color Theme -->
+                <div>
+                    <label class="block text-sm font-bold text-slate-200 mb-2">สีกรอบคำตอบที่ต้องการเน้น</label>
+                    <div class="flex items-center gap-3">
+                        <input type="color" id="config-color" value="#00D26A" class="w-12 h-10 rounded-lg cursor-pointer bg-transparent border-0">
+                        <span class="text-xs text-slate-400">เลือกสีไฮไลต์คำตอบสำหรับการตรวจจับ</span>
+                    </div>
+                </div>
+
+                <!-- Touch Sensitivity -->
+                <div>
+                    <label class="block text-sm font-bold text-slate-200 mb-1">ระยะสัมผัสปุ่มคำตอบ (Sensitivity)</label>
+                    <input type="range" id="config-sensitivity" min="40" max="100" value="70" class="w-full accent-purple-500">
+                    <div class="flex justify-between text-xs text-slate-400 mt-1">
+                        <span>แม่นยำสูง (ต้องแตะตรง)</span>
+                        <span>แตะง่ายขึ้น (รัศมีกว้าง)</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-6 pt-4 border-t border-slate-700 flex justify-end gap-3">
+                <button onclick="saveTeacherConfig()" class="w-full py-3 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold transition-all shadow-lg">
+                    บันทึกการตั้งค่า
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- LEADERBOARD MODAL -->
+    <div id="leaderboard-modal" class="fixed inset-0 z-40 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 hidden">
+        <div class="max-w-md w-full glass-panel rounded-3xl p-6 shadow-2xl border-2 border-yellow-500/40 text-center relative max-h-[90vh] flex flex-col">
+            <div class="flex justify-between items-center mb-4 pb-3 border-b border-slate-700/80">
+                <h3 class="text-2xl font-black text-yellow-300 flex items-center gap-2">
+                    <i class="fa-solid fa-trophy text-yellow-400"></i> ตารางคะแนน Top 10
+                </h3>
+                <button onclick="closeLeaderboardModal()" class="w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 flex items-center justify-center text-slate-400 hover:text-white">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <div class="overflow-y-auto custom-scrollbar flex-1 pr-1">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="text-xs text-slate-400 border-b border-slate-800">
+                            <th class="py-2 px-2 text-center">อันดับ</th>
+                            <th class="py-2 px-2">ชื่อผู้เล่น</th>
+                            <th class="py-2 px-2 text-center">คะแนน</th>
+                            <th class="py-2 px-2 text-right">วันที่</th>
+                        </tr>
+                    </thead>
+                    <tbody id="leaderboard-list" class="text-sm font-semibold text-slate-200">
+                        <!-- Dynamically populated -->
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="mt-4 pt-3 border-t border-slate-800 flex justify-between items-center text-xs text-slate-400">
+                <span>บันทึกในอุปกรณ์นี้</span>
+                <button onclick="clearLeaderboard()" class="text-red-400 hover:underline">ล้างตารางคะแนน</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- GAME OVER / RESULTS SUMMARY MODAL -->
+    <div id="results-modal" class="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-lg flex items-center justify-center p-4 hidden">
+        <div class="max-w-md w-full glass-panel rounded-3xl p-6 md:p-8 shadow-2xl border-2 border-amber-400 text-center relative animate-glow">
+            <div class="w-20 h-20 rounded-full bg-amber-400/20 border-2 border-amber-400 flex items-center justify-center mx-auto mb-3 text-4xl text-amber-300">
+                🏆
+            </div>
+            <h2 class="text-3xl font-black text-white mb-1">จบการแข่งขัน!</h2>
+            <p class="text-slate-300 text-sm mb-6">สรุปผลงานวิชาคณิตศาสตร์ของคุณ</p>
+
+            <!-- Results Grid -->
+            <div class="grid grid-cols-3 gap-3 mb-6">
+                <div class="bg-slate-900/90 p-3 rounded-2xl border border-amber-500/30">
+                    <div class="text-2xl mb-1">🏆</div>
+                    <div id="res-score" class="text-2xl font-black text-yellow-300">0</div>
+                    <div class="text-[11px] text-slate-400 font-bold">คะแนนรวม</div>
+                </div>
+                <div class="bg-slate-900/90 p-3 rounded-2xl border border-blue-500/30">
+                    <div class="text-2xl mb-1">🏃</div>
+                    <div id="res-taps" class="text-2xl font-black text-blue-300">0</div>
+                    <div class="text-[11px] text-slate-400 font-bold">แตะสำเร็จ</div>
+                </div>
+                <div class="bg-slate-900/90 p-3 rounded-2xl border border-emerald-500/30">
+                    <div class="text-2xl mb-1">⚡</div>
+                    <div id="res-avg-time" class="text-2xl font-black text-emerald-300">0s</div>
+                    <div class="text-[11px] text-slate-400 font-bold">เฉลี่ย/ข้อ</div>
+                </div>
+            </div>
+
+            <!-- Save Score Input -->
+            <div class="mb-6 text-left">
+                <label class="block text-xs font-bold text-slate-300 mb-1">พิมพ์ชื่อของคุณเพื่อบันทึกสถิติ:</label>
+                <div class="flex gap-2">
+                    <input type="text" id="player-name-input" placeholder="ใส่ชื่อนักเรียน..." maxlength="15" class="flex-1 p-3 rounded-xl bg-slate-800 border border-slate-700 text-white font-bold outline-none focus:border-amber-400">
+                    <button onclick="savePlayerScore()" class="px-4 py-3 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black transition-all">
+                        บันทึก
+                    </button>
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="grid grid-cols-2 gap-3">
+                <button onclick="restartGame()" class="py-3 px-4 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black transition-all">
+                    <i class="fa-solid fa-rotate-right"></i> เล่นอีกครั้ง
+                </button>
+                <button onclick="returnToMainMenu()" class="py-3 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold transition-all">
+                    <i class="fa-solid fa-house"></i> หน้าหลัก
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Game State Variables
+        let gameState = {
+            isPlaying: false,
+            score: 0,
+            successfulTaps: 0,
+            currentQuestionIdx: 0,
+            maxQuestions: 10,
+            timeLeft: 60,
+            totalDuration: 60,
+            difficulty: 'easy', // 'easy' (2-5) or 'hard' (6-12)
+            customTargetColor: '#00D26A',
+            sensitivityRadius: 70,
+            timerInterval: null,
+            startTime: null,
+            questionStartTime: null,
+            touchCooldown: false,
+            currentQuestionObj: null,
+            userPoses: []
+        };
+
+        // DOM Element Cache
+        const webcamElement = document.getElementById('webcam');
+        const canvasElement = document.getElementById('game-canvas');
+        const ctx = canvasElement.getContext('2d');
+
+        // Web Audio Context Synthesizer (No external audio files required!)
+        let audioCtx = null;
+
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        // Sound FX Generator
+        function playSound(type) {
+            try {
+                initAudio();
+                if (!audioCtx) return;
+
+                const now = audioCtx.currentTime;
+
+                if (type === 'correct') {
+                    // Upbeat arpeggio chord
+                    [523.25, 659.25, 783.99, 1046.50].forEach((freq, idx) => {
+                        const osc = audioCtx.createOscillator();
+                        const gain = audioCtx.createGain();
+                        osc.type = 'triangle';
+                        osc.frequency.setValueAtTime(freq, now + idx * 0.08);
+                        gain.gain.setValueAtTime(0.2, now + idx * 0.08);
+                        gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.08 + 0.2);
+                        osc.connect(gain);
+                        gain.connect(audioCtx.destination);
+                        osc.start(now + idx * 0.08);
+                        osc.stop(now + idx * 0.08 + 0.25);
+                    });
+                } else if (type === 'wrong') {
+                    // Low error buzz
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(150, now);
+                    osc.frequency.exponentialRampToValueAtTime(80, now + 0.3);
+                    gain.gain.setValueAtTime(0.3, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start(now);
+                    osc.stop(now + 0.3);
+                } else if (type === 'bonus') {
+                    // High alert chime
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(880, now);
+                    osc.frequency.setValueAtTime(1760, now + 0.15);
+                    gain.gain.setValueAtTime(0.3, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start(now);
+                    osc.stop(now + 0.4);
+                } else if (type === 'tick') {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(600, now);
+                    gain.gain.setValueAtTime(0.05, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start(now);
+                    osc.stop(now + 0.05);
+                }
+            } catch (e) {
+                console.warn('Audio play failed', e);
+            }
+        }
+
+        let detector = null;
+
+        async function initPoseDetector() {
+            try {
+                if (detector) return true;
+                const model = poseDetection.SupportedModels.MoveNet;
+                const detectorConfig = {
+                    modelType: poseDetection.movenet.modelType.SINGLEPOSE_LIGHTNING
+                };
+                detector = await poseDetection.createDetector(model, detectorConfig);
+                console.log('Pose detector loaded successfully');
+                return true;
+            } catch (err) {
+                console.error('Error initializing Pose detector:', err);
+                return false;
+            }
+        }
+
+        async function setupCamera() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    video: {
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 },
+                        facingMode: 'user'
+                    },
+                    audio: false
+                });
+                webcamElement.srcObject = stream;
+                return new Promise((resolve) => {
+                    webcamElement.onloadedmetadata = () => {
+                        webcamElement.play();
+                        resolve(true);
+                    };
+                });
+            } catch (e) {
+                alert('ไม่สามารถเข้าถึงกล้องเว็บแคมได้ กรุณาอนุญาตการใช้กล้อง หรือเล่นโดยการคลิกที่คำตอบได้เช่นกัน');
+                console.warn('Camera access denied:', e);
+                return false;
+            }
+        }
+
+        // Window resize canvas match
+        function resizeCanvas() {
+            canvasElement.width = window.innerWidth;
+            canvasElement.height = window.innerHeight;
+            if (gameState.currentQuestionObj) {
+                positionOptionBubbles();
+            }
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        // Math Question Generator
+        function generateQuestion() {
+            let num1, num2;
+
+            if (gameState.difficulty === 'easy') {
+                num1 = Math.floor(Math.random() * 4) + 2; // 2 to 5
+                num2 = Math.floor(Math.random() * 9) + 2; // 2 to 10
+            } else {
+                num1 = Math.floor(Math.random() * 7) + 6; // 6 to 12
+                num2 = Math.floor(Math.random() * 9) + 2; // 2 to 10
+            }
+
+            const correctAnswer = num1 * num2;
+
+            // Generate 3 unique distractors close to the correct answer
+            const optionsSet = new Set([correctAnswer]);
+            while (optionsSet.size < 4) {
+                const delta = (Math.floor(Math.random() * 5) + 1) * (Math.random() < 0.5 ? 1 : -1);
+                let wrong = correctAnswer + delta;
+                if (wrong > 0 && wrong !== correctAnswer) {
+                    optionsSet.add(wrong);
+                }
+            }
+
+            const optionsArray = Array.from(optionsSet);
+            // Shuffle options
+            for (let i = optionsArray.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [optionsArray[i], optionsArray[j]] = [optionsArray[j], optionsArray[i]];
+            }
+
+            gameState.currentQuestionObj = {
+                num1,
+                num2,
+                correctAnswer,
+                options: optionsArray,
+                bubbles: []
+            };
+
+            gameState.questionStartTime = Date.now();
+            positionOptionBubbles();
+            updateHUD();
+        }
+
+        // Calculate positions for 4 option bubbles across upper-middle screen
+        function positionOptionBubbles() {
+            if (!gameState.currentQuestionObj) return;
+
+            const w = canvasElement.width;
+            const h = canvasElement.height;
+            const count = 4;
+            const spacing = w / (count + 1);
+
+            // Position option bubbles higher on screen to accommodate bottom question card
+            const yPos = h * 0.38;
+            // Bubble radius adjusted for comfortable target acquisition
+            const bubbleRadius = Math.min(w * 0.11, 90);
+
+            const colors = ['#FF4B91', '#00A8FF', '#FFCD38', '#8B5CF6'];
+
+            gameState.currentQuestionObj.bubbles = gameState.currentQuestionObj.options.map((val, idx) => {
+                return {
+                    val: val,
+                    isCorrect: val === gameState.currentQuestionObj.correctAnswer,
+                    x: spacing * (idx + 1),
+                    y: yPos,
+                    radius: bubbleRadius,
+                    color: colors[idx % colors.length],
+                    floatOffset: Math.random() * Math.PI * 2,
+                    touchProgress: 0 // Progress meter when hand hovers
+                };
+            });
+
+            // Update UI question display text
+            document.getElementById('question-text').innerText = `${gameState.currentQuestionObj.num1} × ${gameState.currentQuestionObj.num2} = ?`;
+        }
+
+        async function startGame() {
+            initAudio();
+            document.getElementById('start-menu').classList.add('hidden');
+            document.getElementById('game-hud').classList.remove('hidden');
+            document.getElementById('question-board-container').classList.remove('hidden');
+            webcamElement.classList.remove('hidden');
+
+            // Reset Game Variables
+            gameState.isPlaying = true;
+            gameState.score = 0;
+            gameState.successfulTaps = 0;
+            gameState.currentQuestionIdx = 1;
+            gameState.timeLeft = parseInt(document.getElementById('config-time').value || 60);
+            gameState.totalDuration = gameState.timeLeft;
+            gameState.startTime = Date.now();
+
+            updateHUD();
+            generateQuestion();
+
+            // Start webcam & AI Pose detector
+            await setupCamera();
+            await initPoseDetector();
+
+            // Start timer
+            if (gameState.timerInterval) clearInterval(gameState.timerInterval);
+            gameState.timerInterval = setInterval(gameTimerTick, 1000);
+
+            // Start main render loop
+            requestAnimationFrame(renderGameLoop);
+        }
+
+        function gameTimerTick() {
+            if (!gameState.isPlaying) return;
+
+            gameState.timeLeft--;
+            document.getElementById('timer-display').innerText = `${gameState.timeLeft}s`;
+
+            if (gameState.timeLeft <= 10) {
+                playSound('tick');
+                document.getElementById('timer-box').classList.add('animate-pulse', 'border-red-500');
+            }
+
+            if (gameState.timeLeft <= 0) {
+                endGame();
+            }
+        }
+
+        async function renderGameLoop() {
+            if (!gameState.isPlaying) return;
+
+            // 1. Draw camera video background
+            ctx.save();
+            ctx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+
+            // Mirror video frame horizontally for natural user feedback
+            if (webcamElement.readyState === 4) {
+                ctx.translate(canvasElement.width, 0);
+                ctx.scale(-1, 1);
+                ctx.drawImage(webcamElement, 0, 0, canvasElement.width, canvasElement.height);
+                ctx.restore();
+            } else {
+                ctx.restore();
+            }
+
+            // Dark subtle overlay for contrast
+            ctx.fillStyle = 'rgba(15, 23, 42, 0.35)';
+            ctx.fillRect(0, 0, canvasElement.width, canvasElement.height);
+
+            // 2. AI Motion Detection via MoveNet
+            let detectedHands = [];
+            if (detector && webcamElement.readyState === 4) {
+                try {
+                    const poses = await detector.estimatePoses(webcamElement);
+                    gameState.userPoses = poses;
+
+                    if (poses.length > 0) {
+                        const keypoints = poses[0].keypoints;
+
+                        // Keypoint IDs: 9 (left_wrist), 10 (right_wrist)
+                        const leftWrist = keypoints.find(k => k.name === 'left_wrist');
+                        const rightWrist = keypoints.find(k => k.name === 'right_wrist');
+
+                        // Convert coordinates (mirroring x back to screen space)
+                        [leftWrist, rightWrist].forEach(wrist => {
+                            if (wrist && wrist.score > 0.3) {
+                                // Screen X is mirrored: canvas.width - (wrist.x / videoWidth * canvas.width)
+                                const screenX = canvasElement.width - (wrist.x / webcamElement.videoWidth * canvasElement.width);
+                                const screenY = wrist.y / webcamElement.videoHeight * canvasElement.height;
+
+                                detectedHands.push({ x: screenX, y: screenY, name: wrist.name });
+                            }
+                        });
+
+                        // Draw body skeleton / hand indicators
+                        drawSkeleton(keypoints);
+                    }
+                } catch (e) {
+                    console.warn('Pose estimation frame drop', e);
+                }
+            }
+
+            // 3. Render Floating Answer Bubbles & Check Collisions
+            if (gameState.currentQuestionObj && gameState.currentQuestionObj.bubbles) {
+                const time = Date.now() * 0.003;
+
+                gameState.currentQuestionObj.bubbles.forEach((bubble) => {
+                    // Floating dynamic animation
+                    const floatY = bubble.y + Math.sin(time + bubble.floatOffset) * 6;
+
+                    // Check hover collision with detected hands
+                    let isHovered = false;
+                    let activeHandPos = null;
+
+                    detectedHands.forEach(hand => {
+                        const dist = Math.hypot(hand.x - bubble.x, hand.y - floatY);
+                        if (dist < gameState.sensitivityRadius) {
+                            isHovered = true;
+                            activeHandPos = hand;
+                        }
+                    });
+
+                    // Draw Power Light Beam if hand is hovering/targeting this bubble
+                    if (isHovered && activeHandPos) {
+                        drawPowerBeam(activeHandPos.x, activeHandPos.y, bubble.x, floatY, bubble.touchProgress);
+                    }
+
+                    // Draw Bubble with power aura
+                    drawBubble(bubble.x, floatY, bubble.radius, bubble.val, bubble.color, isHovered, bubble.touchProgress);
+
+                    // Touch progress confirmation logic
+                    if (isHovered && !gameState.touchCooldown) {
+                        bubble.touchProgress += 0.12; // Progress bar fills up faster
+                        if (bubble.touchProgress >= 1.0) {
+                            handleAnswerSelection(bubble.isCorrect);
+                            bubble.touchProgress = 0;
+                        }
+                    } else {
+                        bubble.touchProgress = Math.max(0, bubble.touchProgress - 0.08);
+                    }
+                });
+            }
+
+            // 4. Render Hand Touch Pointers
+            detectedHands.forEach(hand => {
+                drawHandPointer(hand.x, hand.y);
+            });
+
+            requestAnimationFrame(renderGameLoop);
+        }
+
+        // Draw glowing power beam connecting hand to answer bubble
+        function drawPowerBeam(handX, handY, targetX, targetY, progress) {
+            ctx.save();
+
+            // Outer laser energy aura
+            ctx.shadowColor = '#00FFFF';
+            ctx.shadowBlur = 20 + progress * 25;
+
+            // Main Beam Path
+            ctx.beginPath();
+            ctx.moveTo(handX, handY);
+            ctx.lineTo(targetX, targetY);
+            ctx.lineWidth = 6 + progress * 12;
+            ctx.strokeStyle = `rgba(0, 240, 255, ${0.7 + progress * 0.3})`;
+            ctx.stroke();
+
+            // Inner intense white core
+            ctx.beginPath();
+            ctx.moveTo(handX, handY);
+            ctx.lineTo(targetX, targetY);
+            ctx.lineWidth = 2 + progress * 5;
+            ctx.strokeStyle = '#FFFFFF';
+            ctx.stroke();
+
+            // Electric spark particles along the beam path
+            const sparks = 6;
+            for (let i = 1; i < sparks; i++) {
+                const ratio = i / sparks;
+                const px = handX + (targetX - handX) * ratio + (Math.random() - 0.5) * 16;
+                const py = handY + (targetY - handY) * ratio + (Math.random() - 0.5) * 16;
+                ctx.beginPath();
+                ctx.arc(px, py, 3 + Math.random() * 5, 0, Math.PI * 2);
+                ctx.fillStyle = '#FFCD38';
+                ctx.shadowColor = '#FFCD38';
+                ctx.shadowBlur = 10;
+                ctx.fill();
+            }
+
+            ctx.restore();
+        }
+
+        // Draw glowing skeleton keypoints for visual engagement
+        function drawSkeleton(keypoints) {
+            ctx.fillStyle = '#00D26A';
+            ctx.strokeStyle = 'rgba(0, 210, 106, 0.4)';
+            ctx.lineWidth = 3;
+
+            keypoints.forEach(kp => {
+                if (kp.score > 0.4) {
+                    const screenX = canvasElement.width - (kp.x / webcamElement.videoWidth * canvasElement.width);
+                    const screenY = kp.y / webcamElement.videoHeight * canvasElement.height;
+
+                    ctx.beginPath();
+                    ctx.arc(screenX, screenY, 6, 0, 2 * Math.PI);
+                    ctx.fill();
+                }
+            });
+        }
+
+        // Draw Interactive Option Bubbles on Canvas
+        function drawBubble(x, y, radius, value, color, isHovered, touchProgress = 0) {
+            ctx.save();
+
+            // Power Charging Ring & Arc Effect
+            if (touchProgress > 0 || isHovered) {
+                // Expanding Power Blast Wave
+                ctx.beginPath();
+                ctx.arc(x, y, radius + 12 + touchProgress * 20, 0, Math.PI * 2);
+                ctx.strokeStyle = `rgba(255, 205, 56, ${0.5 + touchProgress * 0.5})`;
+                ctx.lineWidth = 4 + touchProgress * 6;
+                ctx.shadowColor = '#FFCD38';
+                ctx.shadowBlur = 25;
+                ctx.stroke();
+
+                // Circular charging ring meter
+                ctx.beginPath();
+                ctx.arc(x, y, radius + 6, -Math.PI / 2, (-Math.PI / 2) + (Math.PI * 2 * touchProgress));
+                ctx.strokeStyle = '#00D26A';
+                ctx.lineWidth = 8;
+                ctx.shadowColor = '#00D26A';
+                ctx.shadowBlur = 20;
+                ctx.stroke();
+            }
+
+            // Outer Glow when hovered
+            if (isHovered) {
+                ctx.shadowColor = '#00D26A';
+                ctx.shadowBlur = 35;
+            } else {
+                ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+                ctx.shadowBlur = 10;
+            }
+
+            // Circle Background Gradient
+            const gradient = ctx.createRadialGradient(x - radius * 0.3, y - radius * 0.3, radius * 0.1, x, y, radius);
+            gradient.addColorStop(0, '#FFFFFF');
+            gradient.addColorStop(0.35, color);
+            gradient.addColorStop(1, '#0F172A');
+
+            ctx.beginPath();
+            ctx.arc(x, y, radius, 0, Math.PI * 2);
+            ctx.fillStyle = gradient;
+            ctx.fill();
+
+            // Outer Ring
+            ctx.lineWidth = isHovered ? 7 : 4;
+            ctx.strokeStyle = isHovered ? '#00D26A' : 'rgba(255, 255, 255, 0.85)';
+            ctx.stroke();
+
+            // Option Number Text - Extra Large with Thick Dark Outline for Contrast
+            ctx.shadowBlur = 0;
+            ctx.font = `900 ${Math.floor(radius * 0.82)}px 'Prompt', sans-serif`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+
+            // Thick dark outline stroke to stand out against bright bubble center
+            ctx.strokeStyle = '#020617';
+            ctx.lineWidth = Math.max(8, Math.floor(radius * 0.12));
+            ctx.lineJoin = 'round';
+            ctx.strokeText(value, x, y);
+
+            // Bright white interior fill
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillText(value, x, y);
+
+            ctx.restore();
+        }
+
+        // Draw Hand Marker Circle
+        function drawHandPointer(x, y) {
+            ctx.save();
+            ctx.shadowColor = '#FF4B91';
+            ctx.shadowBlur = 15;
+
+            ctx.beginPath();
+            ctx.arc(x, y, 18, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(255, 75, 145, 0.8)';
+            ctx.fill();
+
+            ctx.lineWidth = 3;
+            ctx.strokeStyle = '#FFFFFF';
+            ctx.stroke();
+
+            // Inner Pulsing Center
+            ctx.beginPath();
+            ctx.arc(x, y, 6, 0, Math.PI * 2);
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fill();
+
+            ctx.restore();
+        }
+
+        function handleAnswerSelection(isCorrect) {
+            if (gameState.touchCooldown) return;
+            gameState.touchCooldown = true;
+
+            gameState.successfulTaps++;
+
+            if (isCorrect) {
+                gameState.score += 1;
+                playSound('correct');
+
+                // Launch celebratory confetti burst
+                confetti({
+                    particleCount: 50,
+                    spread: 60,
+                    origin: { y: 0.7 }
+                });
+
+                showFeedbackEffect('✅ ถูกต้อง!', 'text-emerald-400');
+            } else {
+                playSound('wrong');
+                showFeedbackEffect('❌ ยังไม่ถูก!', 'text-red-400');
+            }
+
+            updateHUD();
+
+            // Reduced delay before switching to next question (Faster transition)
+            setTimeout(() => {
+                gameState.currentQuestionIdx++;
+                if (gameState.currentQuestionIdx > gameState.maxQuestions) {
+                    gameState.currentQuestionIdx = 1; // Loop questions until time runs out
+                }
+                generateQuestion();
+
+                // Reduced cooldown delay before allowing next touch
+                setTimeout(() => {
+                    gameState.touchCooldown = false;
+                }, 300);
+            }, 300);
+        }
+
+        // Mouse/Touch Click Fallback (Ensures game playability even without camera)
+        canvasElement.addEventListener('click', (e) => {
+            if (!gameState.isPlaying || gameState.touchCooldown) return;
+
+            const rect = canvasElement.getBoundingClientRect();
+            const clickX = e.clientX - rect.left;
+            const clickY = e.clientY - rect.top;
+
+            if (gameState.currentQuestionObj && gameState.currentQuestionObj.bubbles) {
+                gameState.currentQuestionObj.bubbles.forEach(bubble => {
+                    const dist = Math.hypot(clickX - bubble.x, clickY - bubble.y);
+                    if (dist <= bubble.radius) {
+                        handleAnswerSelection(bubble.isCorrect);
+                    }
+                });
+            }
+        });
+
+        function showFeedbackEffect(text, colorClass) {
+            const card = document.getElementById('question-card');
+            card.classList.add('scale-105');
+
+            const feedbackEl = document.createElement('div');
+            // Positioned above the question card so it doesn't obstruct the question text
+            feedbackEl.className = `absolute -top-12 md:-top-16 left-1/2 -translate-x-1/2 text-3xl md:text-5xl font-black ${colorClass} drop-shadow-[0_4px_12px_rgba(0,0,0,0.9)] z-30 animate-bounce pointer-events-none whitespace-nowrap`;
+            feedbackEl.innerText = text;
+
+            card.appendChild(feedbackEl);
+
+            setTimeout(() => {
+                card.classList.remove('scale-105');
+                feedbackEl.remove();
+            }, 600);
+        }
+
+        function updateHUD() {
+            document.getElementById('score-display').innerText = gameState.score;
+            document.getElementById('taps-display').innerText = gameState.successfulTaps;
+            document.getElementById('question-tracker').innerText = `ข้อที่ ${gameState.currentQuestionIdx}`;
+        }
+
+        function endGame() {
+            gameState.isPlaying = false;
+            clearInterval(gameState.timerInterval);
+
+            // Calculate metrics
+            const timeSpent = Math.max(1, gameState.totalDuration - gameState.timeLeft);
+            const avgTime = gameState.successfulTaps > 0 ? (timeSpent / gameState.successfulTaps).toFixed(1) : 0;
+
+            document.getElementById('res-score').innerText = gameState.score;
+            document.getElementById('res-taps').innerText = gameState.successfulTaps;
+            document.getElementById('res-avg-time').innerText = `${avgTime}s`;
+
+            document.getElementById('results-modal').classList.remove('hidden');
+
+            // Final Victory Confetti
+            confetti({
+                particleCount: 120,
+                spread: 100,
+                origin: { y: 0.5 }
+            });
+        }
+
+        function savePlayerScore() {
+            const nameInput = document.getElementById('player-name-input');
+            const name = nameInput.value.trim() || 'นักเรียน';
+
+            const newRecord = {
+                name: name,
+                score: gameState.score,
+                date: new Date().toLocaleDateString('th-TH', { month: 'short', day: 'numeric' })
+            };
+
+            let leaderboard = JSON.parse(localStorage.getItem('สูตรคูณ_leaderboard') || '[]');
+            leaderboard.push(newRecord);
+            leaderboard.sort((a, b) => b.score - a.score);
+            leaderboard = leaderboard.slice(0, 10); // Keep top 10
+
+            localStorage.setItem('สูตรคูณ_leaderboard', JSON.stringify(leaderboard));
+
+            alert('บันทึกคะแนนเรียบร้อยแล้ว!');
+            openLeaderboardModal();
+        }
+
+        function openLeaderboardModal() {
+            const listContainer = document.getElementById('leaderboard-list');
+            listContainer.innerHTML = '';
+
+            const leaderboard = JSON.parse(localStorage.getItem('สูตรคูณ_leaderboard') || '[]');
+
+            if (leaderboard.length === 0) {
+                listContainer.innerHTML = '<tr><td colspan="4" class="py-4 text-center text-slate-400">ยังไม่มีข้อมูลคะแนน</td></tr>';
+            } else {
+                leaderboard.forEach((item, index) => {
+                    const rankBadge = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `#${index + 1}`;
+                    const row = document.createElement('tr');
+                    row.className = 'border-b border-slate-800/60 hover:bg-slate-800/40';
+                    row.innerHTML = `
+                        <td class="py-2 px-2 text-center font-bold text-amber-300">${rankBadge}</td>
+                        <td class="py-2 px-2 font-bold text-white">${escapeHtml(item.name)}</td>
+                        <td class="py-2 px-2 text-center text-emerald-400 font-extrabold">${item.score}</td>
+                        <td class="py-2 px-2 text-right text-xs text-slate-400">${item.date}</td>
+                    `;
+                    listContainer.appendChild(row);
+                });
+            }
+
+            document.getElementById('leaderboard-modal').classList.remove('hidden');
+        }
+
+        function closeLeaderboardModal() {
+            document.getElementById('leaderboard-modal').classList.add('hidden');
+        }
+
+        function clearLeaderboard() {
+            if (confirm('คุณต้องการล้างตารางคะแนนทั้งหมดใช่หรือไม่?')) {
+                localStorage.removeItem('สูตรคูณ_leaderboard');
+                openLeaderboardModal();
+            }
+        }
+
+        // Teacher Config Modal Logic
+        function openTeacherModal() {
+            document.getElementById('teacher-modal').classList.remove('hidden');
+        }
+
+        function closeTeacherModal() {
+            document.getElementById('teacher-modal').classList.add('hidden');
+        }
+
+        function saveTeacherConfig() {
+            const difficulty = document.querySelector('input[name="difficulty"]:checked').value;
+            const timeLimit = parseInt(document.getElementById('config-time').value);
+            const targetColor = document.getElementById('config-color').value;
+            const sensitivity = parseInt(document.getElementById('config-sensitivity').value);
+
+            gameState.difficulty = difficulty;
+            gameState.totalDuration = timeLimit;
+            gameState.customTargetColor = targetColor;
+            gameState.sensitivityRadius = sensitivity;
+
+            alert('บันทึกการตั้งค่าโหมดครูเรียบร้อย!');
+            closeTeacherModal();
+        }
+
+        function restartGame() {
+            document.getElementById('results-modal').classList.add('hidden');
+            startGame();
+        }
+
+        function returnToMainMenu() {
+            document.getElementById('results-modal').classList.add('hidden');
+            document.getElementById('game-hud').classList.add('hidden');
+            document.getElementById('question-board-container').classList.add('hidden');
+            document.getElementById('start-menu').classList.remove('hidden');
+            gameState.isPlaying = false;
+        }
+
+        function togglePauseModal() {
+            if (gameState.isPlaying) {
+                gameState.isPlaying = false;
+                if (confirm('ต้องการหยุดเกมชั่วคราว หรือกลับสู่หน้าหลัก?')) {
+                    returnToMainMenu();
+                } else {
+                    gameState.isPlaying = true;
+                    requestAnimationFrame(renderGameLoop);
+                }
+            }
+        }
+
+        function escapeHtml(str) {
+            return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,1212 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>เกมทดสอบสูตรคูณ</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+<link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;500;700&display=swap" rel="stylesheet">
+
+<style>
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:'Kanit',sans-serif;
+}
+
+html,
+body{
+    width:100%;
+    height:100%;
+    overflow:hidden;
+}
+
+body{
+    position:relative;
+
+    background:
+    linear-gradient(
+        135deg,
+        #eef4ff 0%,
+        #f7f3ff 50%,
+        #fff1f7 100%
+    );
+}
+
+/* =========================
+   พื้นหลังมินิมอล
+========================= */
+
+.bg{
+    position:absolute;
+    border-radius:50%;
+    pointer-events:none;
+    z-index:-1;
+}
+
+.bg1{
+    width:380px;
+    height:380px;
+    left:-150px;
+    top:-150px;
+    background:rgba(147,197,253,.24);
+}
+
+.bg2{
+    width:420px;
+    height:420px;
+    right:-170px;
+    bottom:-180px;
+    background:rgba(244,114,182,.18);
+}
+
+.bg3{
+    width:130px;
+    height:130px;
+    right:9%;
+    top:13%;
+    background:rgba(196,181,253,.20);
+}
+
+.bg4{
+    width:110px;
+    height:110px;
+    left:10%;
+    bottom:10%;
+    background:rgba(134,239,172,.20);
+}
+
+/* =========================
+   หน้าจอ
+========================= */
+
+.screen{
+    position:absolute;
+    inset:0;
+
+    width:100vw;
+    height:100vh;
+
+    display:none;
+
+    flex-direction:column;
+    align-items:center;
+}
+
+.active{
+    display:flex;
+}
+
+/* =========================
+   หน้าเลือกแม่สูตรคูณ
+========================= */
+
+#menuScreen{
+    justify-content:flex-start;
+    padding-top:25px;
+}
+
+.menu-title{
+    font-size:3vw;
+    font-weight:700;
+    color:#1e3a8a;
+    margin-bottom:18px;
+}
+
+/* ตารางปุ่ม */
+
+.number-grid{
+    width:86vw;
+    max-width:980px;
+
+    display:grid;
+
+    grid-template-columns:repeat(6,1fr);
+
+    gap:15px;
+}
+
+/* ปุ่มแม่สูตรคูณ */
+
+.number-btn{
+    position:relative;
+
+    width:100%;
+    aspect-ratio:1/1;
+
+    border:0;
+    border-radius:27px;
+
+    color:white;
+
+    cursor:pointer;
+
+    box-shadow:
+        0 8px 20px rgba(0,0,0,.10);
+
+    transition:
+        transform .2s,
+        box-shadow .2s;
+}
+
+.number-btn:hover{
+    transform:translateY(-4px) scale(1.02);
+
+    box-shadow:
+        0 13px 25px rgba(0,0,0,.14);
+}
+
+.number-btn:active{
+    transform:scale(.97);
+}
+
+.number-btn .big{
+    display:block;
+
+    font-size:4vw;
+
+    line-height:1;
+}
+
+.number-btn .small{
+    display:block;
+
+    font-size:1.25vw;
+
+    margin-top:6px;
+}
+
+/* =========================
+   เครื่องหมายผ่าน
+========================= */
+
+.check-mark{
+
+    position:absolute;
+
+    top:7px;
+    right:9px;
+
+    width:38px;
+    height:38px;
+
+    border-radius:50%;
+
+    background:white;
+
+    color:#16a34a;
+
+    display:none;
+
+    justify-content:center;
+    align-items:center;
+
+    font-size:25px;
+
+    font-weight:700;
+
+    box-shadow:
+        0 4px 10px rgba(0,0,0,.15);
+}
+
+.number-btn.completed .check-mark{
+    display:flex;
+}
+
+/* =========================
+   สีปุ่ม
+========================= */
+
+.number-btn:nth-child(1){
+    background:linear-gradient(135deg,#60a5fa,#2563eb);
+}
+
+.number-btn:nth-child(2){
+    background:linear-gradient(135deg,#a78bfa,#7c3aed);
+}
+
+.number-btn:nth-child(3){
+    background:linear-gradient(135deg,#fb7185,#ec4899);
+}
+
+.number-btn:nth-child(4){
+    background:linear-gradient(135deg,#fb923c,#f59e0b);
+}
+
+.number-btn:nth-child(5){
+    background:linear-gradient(135deg,#22d3ee,#0891b2);
+}
+
+.number-btn:nth-child(6){
+    background:linear-gradient(135deg,#38bdf8,#0284c7);
+}
+
+.number-btn:nth-child(7){
+    background:linear-gradient(135deg,#2dd4bf,#0f766e);
+}
+
+.number-btn:nth-child(8){
+    background:linear-gradient(135deg,#f87171,#dc2626);
+}
+
+.number-btn:nth-child(9){
+    background:linear-gradient(135deg,#84cc16,#65a30d);
+}
+
+.number-btn:nth-child(10){
+    background:linear-gradient(135deg,#facc15,#ca8a04);
+}
+
+.number-btn:nth-child(11){
+    background:linear-gradient(135deg,#c084fc,#9333ea);
+}
+
+/* =========================
+   หน้าเกม
+========================= */
+
+#gameScreen{
+    justify-content:center;
+}
+
+/* เวลา */
+
+.top-left,
+.top-right{
+
+    position:absolute;
+
+    top:18px;
+
+    background:white;
+
+    border-radius:30px;
+
+    padding:10px 22px;
+
+    font-size:1.7vw;
+
+    font-weight:700;
+
+    box-shadow:
+        0 7px 18px rgba(0,0,0,.08);
+}
+
+.top-left{
+    left:18px;
+    color:#ef4444;
+}
+
+.top-right{
+    right:18px;
+    color:#2563eb;
+}
+
+/* กล่องโจทย์ */
+
+.question-box{
+
+    width:78vw;
+
+    background:white;
+
+    border-radius:42px;
+
+    padding:48px;
+
+    margin-bottom:30px;
+
+    display:flex;
+
+    justify-content:center;
+
+    align-items:center;
+
+    box-shadow:
+        0 15px 35px rgba(0,0,0,.08);
+}
+
+.question{
+
+    font-size:13vw;
+
+    line-height:1;
+
+    font-weight:700;
+
+    color:#1e3a8a;
+
+    text-align:center;
+}
+
+/* =========================
+   ตัวเลือก
+========================= */
+
+.answers{
+
+    width:78vw;
+
+    display:grid;
+
+    grid-template-columns:1fr 1fr;
+
+    gap:22px;
+}
+
+.answer-btn{
+
+    border:0;
+
+    border-radius:32px;
+
+    padding:27px;
+
+    font-size:7vw;
+
+    line-height:1;
+
+    font-weight:700;
+
+    color:white;
+
+    cursor:pointer;
+
+    box-shadow:
+        0 10px 25px rgba(0,0,0,.10);
+
+    transition:.2s;
+}
+
+.answer-btn:hover{
+    transform:translateY(-4px) scale(1.01);
+}
+
+.answer-btn:active{
+    transform:scale(.97);
+}
+
+.answer-btn:nth-child(1){
+    background:linear-gradient(135deg,#4f7df3,#3458eb);
+}
+
+.answer-btn:nth-child(2){
+    background:linear-gradient(135deg,#ff5ea8,#ec4899);
+}
+
+.answer-btn:nth-child(3){
+    background:linear-gradient(135deg,#73d87f,#4caf50);
+}
+
+.answer-btn:nth-child(4){
+    background:linear-gradient(135deg,#ffb347,#f97316);
+}
+
+/* =========================
+   หน้าสรุป
+========================= */
+
+#resultScreen{
+    justify-content:center;
+}
+
+.result-card{
+
+    width:75vw;
+    max-width:650px;
+
+    background:white;
+
+    border-radius:42px;
+
+    padding:50px;
+
+    text-align:center;
+
+    box-shadow:
+        0 18px 40px rgba(0,0,0,.08);
+}
+
+.result-title{
+
+    font-size:5vw;
+
+    color:#1e3a8a;
+
+    font-weight:700;
+
+    margin-bottom:15px;
+}
+
+.result-score{
+
+    font-size:4vw;
+
+    color:#16a34a;
+
+    font-weight:700;
+
+    margin-bottom:30px;
+}
+
+.restart-btn{
+
+    border:0;
+
+    padding:16px 42px;
+
+    border-radius:30px;
+
+    background:
+        linear-gradient(
+            135deg,
+            #4f7df3,
+            #3458eb
+        );
+
+    color:white;
+
+    font-size:2vw;
+
+    font-weight:700;
+
+    cursor:pointer;
+
+    box-shadow:
+        0 8px 20px rgba(0,0,0,.10);
+
+    transition:.2s;
+}
+
+.restart-btn:hover{
+    transform:scale(1.04);
+}
+
+/* =========================
+   หน้าจอเล็ก
+========================= */
+
+@media(max-width:768px){
+
+    #menuScreen{
+        padding-top:18px;
+    }
+
+    .menu-title{
+        font-size:8vw;
+        margin-bottom:12px;
+    }
+
+    .number-grid{
+
+        width:90vw;
+
+        gap:11px;
+
+        grid-template-columns:repeat(3,1fr);
+    }
+
+    .number-btn{
+        border-radius:22px;
+    }
+
+    .number-btn .big{
+        font-size:11vw;
+    }
+
+    .number-btn .small{
+        font-size:3.8vw;
+    }
+
+    .check-mark{
+
+        width:30px;
+        height:30px;
+
+        font-size:20px;
+
+        top:5px;
+        right:5px;
+    }
+
+    .top-left,
+    .top-right{
+
+        font-size:4.5vw;
+
+        padding:9px 17px;
+    }
+
+    .question-box{
+
+        width:92vw;
+
+        padding:35px;
+
+        margin-bottom:22px;
+    }
+
+    .question{
+        font-size:23vw;
+    }
+
+    .answers{
+
+        width:92vw;
+
+        gap:15px;
+    }
+
+    .answer-btn{
+
+        padding:25px 10px;
+
+        font-size:13vw;
+
+        border-radius:27px;
+    }
+
+    .result-card{
+
+        width:90vw;
+
+        padding:40px 25px;
+    }
+
+    .result-title{
+        font-size:10vw;
+    }
+
+    .result-score{
+        font-size:8vw;
+    }
+
+    .restart-btn{
+        font-size:5vw;
+    }
+
+}
+
+</style>
+</head>
+
+<body>
+
+<!-- พื้นหลัง -->
+
+<div class="bg bg1"></div>
+<div class="bg bg2"></div>
+<div class="bg bg3"></div>
+<div class="bg bg4"></div>
+
+
+<!-- ==================================================
+     หน้าเลือกแม่สูตรคูณ
+================================================== -->
+
+<div id="menuScreen" class="screen active">
+
+    <div class="menu-title">
+        🏆 เลือกแม่สูตรคูณ
+    </div>
+
+    <div
+        class="number-grid"
+        id="numberGrid">
+    </div>
+
+</div>
+
+
+<!-- ==================================================
+     หน้าเกม
+================================================== -->
+
+<div id="gameScreen" class="screen">
+
+    <div class="top-left">
+        ⏰ <span id="timer">10</span>
+    </div>
+
+    <div class="top-right">
+        ⭐ <span id="score">0</span>/20
+    </div>
+
+    <div class="question-box">
+
+        <div
+            class="question"
+            id="question">
+            2 × 1
+        </div>
+
+    </div>
+
+    <div
+        class="answers"
+        id="answers">
+    </div>
+
+</div>
+
+
+<!-- ==================================================
+     หน้าสรุป
+================================================== -->
+
+<div id="resultScreen" class="screen">
+
+    <div class="result-card">
+
+        <div
+            class="result-title"
+            id="resultTitle">
+            🎉 ภารกิจสำเร็จ!
+        </div>
+
+        <div
+            class="result-score"
+            id="resultScore">
+            20 / 20
+        </div>
+
+        <button
+            class="restart-btn"
+            onclick="restartGame()">
+
+            🔄 กลับไปเลือกแม่สูตรคูณ
+
+        </button>
+
+    </div>
+
+</div>
+
+
+<script>
+
+/* ==================================================
+   ตัวแปรหลัก
+================================================== */
+
+const menuScreen =
+    document.getElementById("menuScreen");
+
+const gameScreen =
+    document.getElementById("gameScreen");
+
+const resultScreen =
+    document.getElementById("resultScreen");
+
+const numberGrid =
+    document.getElementById("numberGrid");
+
+const questionEl =
+    document.getElementById("question");
+
+const answersEl =
+    document.getElementById("answers");
+
+const timerEl =
+    document.getElementById("timer");
+
+const scoreEl =
+    document.getElementById("score");
+
+const resultTitle =
+    document.getElementById("resultTitle");
+
+const resultScore =
+    document.getElementById("resultScore");
+
+
+let selectedNumber = 2;
+
+let currentQuestion = 1;
+
+let score = 0;
+
+let timer = 10;
+
+let countdown = null;
+
+let correctAnswer = 0;
+
+
+/* ==================================================
+   จำนวนข้อ
+================================================== */
+
+const TOTAL_QUESTIONS = 20;
+
+
+/* ==================================================
+   เก็บสถานะแม่สูตรคูณที่ผ่านแล้ว
+================================================== */
+
+let completedTables = {};
+
+for(let i = 2; i <= 12; i++){
+
+    completedTables[i] = false;
+
+}
+
+
+/* ==================================================
+   สร้างปุ่มแม่สูตรคูณ
+================================================== */
+
+for(let i = 2; i <= 12; i++){
+
+    const btn =
+        document.createElement("button");
+
+    btn.className = "number-btn";
+
+    btn.dataset.table = i;
+
+    btn.innerHTML = `
+
+        <span class="big">
+            ${i}
+        </span>
+
+        <span class="small">
+            แม่ ${i}
+        </span>
+
+        <span class="check-mark">
+            ✓
+        </span>
+
+    `;
+
+    btn.onclick = function(){
+
+        startGame(i);
+
+    };
+
+    numberGrid.appendChild(btn);
+
+}
+
+
+/* ==================================================
+   สร้างชุดโจทย์
+==================================================
+
+   ตัวคูณมี 1-12
+
+   ต้องการ 20 ข้อ
+
+   ดังนั้นจะนำ 1-12 มาใช้ก่อน
+   แล้วสุ่มเลือกเพิ่มอีก 8 ตัว
+
+   แต่จะไม่ให้ "โจทย์" ซ้ำกัน
+
+   เพราะในแม่เดียวกัน
+   โจทย์คือ แม่ × ตัวคูณ
+
+================================================== */
+
+let questionNumbers = [];
+
+let questionIndex = 0;
+
+
+function createQuestionSet(){
+
+    let numbers = [];
+
+    /*
+       เพิ่มตัวคูณ 1-12
+    */
+
+    for(let i = 1; i <= 12; i++){
+
+        numbers.push(i);
+
+    }
+
+
+    /*
+       สุ่มลำดับ
+    */
+
+    numbers.sort(() =>
+        Math.random() - 0.5
+    );
+
+
+    /*
+       ใช้ครบ 1-12 ก่อน
+    */
+
+    questionNumbers =
+        numbers.slice(0,12);
+
+
+    /*
+       ต้องเพิ่มอีก 8 ข้อ
+       เพราะทั้งหมดต้องมี 20 ข้อ
+    */
+
+    let extraNumbers = [...numbers];
+
+    extraNumbers.sort(() =>
+        Math.random() - 0.5
+    );
+
+
+    for(let i = 0; i < 8; i++){
+
+        questionNumbers.push(
+            extraNumbers[i]
+        );
+
+    }
+
+
+    /*
+       สุ่มลำดับทั้ง 20 ข้ออีกครั้ง
+    */
+
+    questionNumbers.sort(() =>
+        Math.random() - 0.5
+    );
+
+
+    questionIndex = 0;
+
+}
+
+
+/* ==================================================
+   เริ่มเกม
+================================================== */
+
+function startGame(number){
+
+    selectedNumber = number;
+
+    score = 0;
+
+    currentQuestion = 1;
+
+    scoreEl.innerText =
+        "0";
+
+
+    /*
+       สร้างชุดโจทย์ใหม่ทุกครั้ง
+    */
+
+    createQuestionSet();
+
+
+    menuScreen.classList.remove("active");
+
+    resultScreen.classList.remove("active");
+
+    gameScreen.classList.add("active");
+
+
+    nextQuestion();
+
+}
+
+
+/* ==================================================
+   แสดงโจทย์
+================================================== */
+
+function nextQuestion(){
+
+    /*
+       ถ้าครบ 20 ข้อ
+    */
+
+    if(currentQuestion > TOTAL_QUESTIONS){
+
+        completeTable();
+
+        showResult(true);
+
+        return;
+
+    }
+
+
+    /*
+       ตั้งเวลาใหม่
+    */
+
+    timer = 10;
+
+    timerEl.innerText =
+        timer;
+
+
+    clearInterval(countdown);
+
+
+    countdown =
+        setInterval(function(){
+
+            timer--;
+
+            timerEl.innerText =
+                timer;
+
+
+            if(timer <= 0){
+
+                clearInterval(countdown);
+
+                showResult(false);
+
+            }
+
+        },1000);
+
+
+    /*
+       ดึงตัวคูณจากชุดที่สร้างไว้
+    */
+
+    let num =
+        questionNumbers[questionIndex];
+
+
+    questionIndex++;
+
+
+    /*
+       คำนวณคำตอบ
+    */
+
+    correctAnswer =
+        selectedNumber * num;
+
+
+    /*
+       แสดงโจทย์
+    */
+
+    questionEl.innerText =
+        `${selectedNumber} × ${num}`;
+
+
+    /*
+       สร้างตัวเลือก
+    */
+
+    let choices = [
+        correctAnswer
+    ];
+
+
+    while(choices.length < 4){
+
+        let fake =
+            correctAnswer +
+            Math.floor(
+                Math.random() * 21
+            ) - 10;
+
+
+        /*
+           ตัวเลือกต้องเป็นจำนวนบวก
+           และไม่ซ้ำกัน
+        */
+
+        if(
+            fake > 0 &&
+            !choices.includes(fake)
+        ){
+
+            choices.push(fake);
+
+        }
+
+    }
+
+
+    /*
+       สุ่มตำแหน่งตัวเลือก
+    */
+
+    choices.sort(() =>
+        Math.random() - 0.5
+    );
+
+
+    answersEl.innerHTML = "";
+
+
+    /*
+       สร้างปุ่มคำตอบ
+    */
+
+    choices.forEach(function(choice){
+
+        const btn =
+            document.createElement("button");
+
+        btn.className =
+            "answer-btn";
+
+        btn.innerText =
+            choice;
+
+
+        btn.onclick =
+            function(){
+
+                checkAnswer(choice);
+
+            };
+
+
+        answersEl.appendChild(btn);
+
+    });
+
+}
+
+
+/* ==================================================
+   ตรวจคำตอบ
+================================================== */
+
+function checkAnswer(choice){
+
+    clearInterval(countdown);
+
+
+    /*
+       ตอบถูก
+    */
+
+    if(choice === correctAnswer){
+
+        score++;
+
+        scoreEl.innerText =
+            score;
+
+
+        currentQuestion++;
+
+
+        nextQuestion();
+
+    }
+
+    /*
+       ตอบผิด = จบเกม
+    */
+
+    else{
+
+        showResult(false);
+
+    }
+
+}
+
+
+/* ==================================================
+   ทำแม่สูตรคูณผ่าน
+================================================== */
+
+function completeTable(){
+
+    completedTables[selectedNumber] =
+        true;
+
+
+    /*
+       ค้นหาปุ่มแม่ที่ทำผ่าน
+    */
+
+    const button =
+        document.querySelector(
+            `.number-btn[data-table="${selectedNumber}"]`
+        );
+
+
+    /*
+       เพิ่มเครื่องหมาย ✓
+    */
+
+    if(button){
+
+        button.classList.add("completed");
+
+    }
+
+}
+
+
+/* ==================================================
+   แสดงผล
+================================================== */
+
+function showResult(success){
+
+    clearInterval(countdown);
+
+
+    gameScreen.classList.remove("active");
+
+    resultScreen.classList.add("active");
+
+
+    if(success){
+
+        resultTitle.innerHTML =
+            "🎉 ภารกิจสำเร็จ!";
+
+    }else{
+
+        resultTitle.innerHTML =
+            "❌ เกมจบ!";
+
+    }
+
+
+    resultScore.innerHTML =
+        `${score} / ${TOTAL_QUESTIONS}`;
+
+}
+
+
+/* ==================================================
+   กลับไปหน้าเลือกแม่สูตรคูณ
+================================================== */
+
+function restartGame(){
+
+    clearInterval(countdown);
+
+    resultScreen.classList.remove("active");
+
+    gameScreen.classList.remove("active");
+
+    menuScreen.classList.add("active");
+
+}
+
+</script>
+
+</body>
+</html>

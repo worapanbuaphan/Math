@@ -1,0 +1,1029 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ผลลบหรรษา - เกมแตะผลลบ AI</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            dark: '#0B0F19',
+                            panel: '#1A233A',
+                            primary: '#00F0FF',
+                            secondary: '#FF003C',
+                            success: '#00FF66',
+                            warning: '#FFDE00',
+                        }
+                    },
+                    fontFamily: {
+                        prompt: ['Prompt', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;600;800;900&display=swap" rel="stylesheet">
+
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Tone.js for Audio -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+
+    <!-- Canvas Confetti -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+    <!-- TensorFlow.js and MoveNet Pose Detection -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-core"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-converter"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-webgl"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/pose-detection"></script>
+
+    <style>
+        * {
+            user-select: none;
+            -webkit-user-select: none;
+            box-sizing: border-box;
+            font-family: 'Prompt', sans-serif;
+        }
+
+        body {
+            background-color: #0B0F19;
+            color: #F8FAFC;
+            overflow: hidden;
+            touch-action: manipulation;
+        }
+
+        /* 100% Mirroring for realistic camera feel */
+        .mirror-x {
+            transform: scaleX(-1);
+        }
+
+        /* Dark Gamer Glassmorphism */
+        .glass-panel {
+            background: rgba(26, 35, 58, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 2px solid rgba(0, 240, 255, 0.2);
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.8), inset 0 0 15px rgba(0, 240, 255, 0.05);
+        }
+
+        /* Massive Text Outline for Question */
+        .text-stroke-massive {
+            -webkit-text-stroke: 8px #000000;
+            text-shadow: 0 10px 25px rgba(0, 0, 0, 1), 0 0 40px rgba(0, 240, 255, 0.4);
+        }
+        @media (min-width: 768px) {
+            .text-stroke-massive {
+                -webkit-text-stroke: 12px #000000;
+            }
+        }
+
+        /* Animations */
+        @keyframes glow-pulse {
+            0%, 100% { box-shadow: 0 0 15px rgba(0, 240, 255, 0.4); }
+            50% { box-shadow: 0 0 30px rgba(0, 240, 255, 0.8); }
+        }
+        .animate-glow-border {
+            animation: glow-pulse 2s infinite;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar { width: 8px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: rgba(11, 15, 25, 0.8); }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #00F0FF; border-radius: 4px; }
+    </style>
+</head>
+<body class="w-screen h-screen relative flex flex-col justify-between items-center overflow-hidden bg-brand-dark">
+
+    <!-- CAMERA & CANVAS -->
+    <div id="viewport-container" class="absolute inset-0 w-full h-full bg-black overflow-hidden z-0">
+        <video id="webcam" class="absolute inset-0 w-full h-full object-cover mirror-x hidden" playsinline muted></video>
+        <canvas id="game-canvas" class="absolute inset-0 w-full h-full object-cover z-10"></canvas>
+    </div>
+
+    <!-- IN-GAME HUD -->
+    <!-- Home Button (Top Left) -->
+    <button id="btn-home" onclick="confirmExitGame()" class="absolute top-4 left-4 z-50 glass-panel px-4 py-2 rounded-xl text-white font-bold hover:bg-slate-700/80 transition-all hidden flex items-center gap-2">
+        <i class="fa-solid fa-house text-brand-primary"></i> <span>หน้าหลัก</span>
+    </button>
+
+    <header id="game-hud" class="relative z-20 w-full px-4 pt-4 pb-1 flex justify-end items-start hidden pointer-events-none">
+        <!-- Right HUD: Mode, Timer & Score -->
+        <div class="flex flex-col gap-2 items-end">
+            <!-- Score -->
+            <div class="glass-panel px-5 py-2 rounded-2xl flex items-center gap-3 border-brand-warning/50 pointer-events-auto">
+                <div class="w-10 h-10 rounded-xl bg-brand-warning text-black flex items-center justify-center text-xl shadow-[0_0_15px_#FFDE00]">
+                    <i class="fa-solid fa-star"></i>
+                </div>
+                <div class="text-right">
+                    <span class="text-[10px] text-yellow-200 font-bold uppercase block">คะแนน</span>
+                    <span id="score-display" class="text-3xl font-black text-white leading-none">0</span>
+                </div>
+            </div>
+            
+            <!-- Timer -->
+            <div id="timer-box" class="glass-panel px-5 py-2 rounded-2xl flex items-center gap-3 border-brand-primary/50 pointer-events-auto">
+                <div class="w-10 h-10 rounded-xl bg-brand-primary text-black flex items-center justify-center text-xl shadow-[0_0_15px_#00F0FF]">
+                    <i class="fa-solid fa-clock"></i>
+                </div>
+                <div class="text-right">
+                    <span id="timer-label" class="text-[10px] text-cyan-200 font-bold uppercase block">เวลาเหลือ</span>
+                    <span id="timer-display" class="text-3xl font-black text-white leading-none">60</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- QUESTION BOARD (Anchored Top Center) -->
+    <div id="question-board-container" class="absolute top-28 md:top-32 left-1/2 -translate-x-1/2 z-20 w-full pointer-events-none hidden flex flex-col items-center">
+        <!-- Feedback text container -->
+        <div id="feedback-container" class="absolute -bottom-20 md:-bottom-24 text-4xl md:text-6xl font-black drop-shadow-[0_5px_15px_rgba(0,0,0,1)] transition-all z-30 opacity-0 scale-50">
+            <!-- Injected via JS -->
+        </div>
+
+        <div id="question-card" class="relative">
+            <!-- 3X LARGER TEXT -->
+            <h2 id="question-text" class="text-7xl md:text-[9rem] font-black text-white text-stroke-massive tracking-wider">
+                10 - 5 = ?
+            </h2>
+            
+            <!-- BONUS BADGE: Tucked bottom-right, rotated 35deg, never blocks question -->
+            <div id="bonus-badge" class="absolute -bottom-6 -right-12 md:-right-20 rotate-[35deg] bg-gradient-to-r from-[#FF003C] to-[#FF9000] text-white font-black py-2 px-6 rounded-full text-sm md:text-xl shadow-[0_0_20px_#FF003C] border-2 border-white hidden animate-pulse whitespace-nowrap">
+                <i class="fa-solid fa-bolt"></i> โบนัส x2
+            </div>
+        </div>
+    </div>
+
+    <!-- START MENU -->
+    <div id="start-menu" class="absolute inset-0 z-40 bg-brand-dark flex flex-col items-center justify-center p-4">
+        <!-- Animated Background Elements -->
+        <div class="absolute inset-0 overflow-hidden pointer-events-none opacity-20">
+            <div class="absolute top-1/4 left-1/4 w-96 h-96 bg-brand-primary rounded-full blur-[120px]"></div>
+            <div class="absolute bottom-1/4 right-1/4 w-96 h-96 bg-[#FF003C] rounded-full blur-[120px]"></div>
+        </div>
+
+        <div class="glass-panel rounded-3xl p-8 max-w-md w-full text-center shadow-2xl relative z-10 border-brand-primary animate-glow-border">
+            <div class="text-6xl mb-4 drop-shadow-[0_0_15px_#00F0FF]">🚀</div>
+            <h1 class="text-4xl md:text-5xl font-black text-white mb-2 tracking-wide text-transparent bg-clip-text bg-gradient-to-r from-brand-primary to-blue-400">
+                ผลลบหรรษา
+            </h1>
+            <p class="text-slate-300 text-sm md:text-base font-medium mb-8">
+                เกมแตะผลลบ Real-Time ตอบคำถามโดยใช้ท่าทางมือผ่านกล้อง! แช่มือ 0.8 วินาทีเพื่อเลือกคำตอบ
+            </p>
+
+            <div class="space-y-4">
+                <input type="text" id="player-name-input" placeholder="กรอกชื่อผู้เล่น..." maxlength="20" class="w-full p-4 rounded-xl bg-slate-900 border-2 border-slate-700 text-white font-bold text-center text-lg outline-none focus:border-brand-primary transition-colors">
+                
+                <button onclick="requestStartGame()" class="w-full py-4 rounded-xl bg-brand-primary hover:bg-cyan-400 text-brand-dark font-black text-xl shadow-[0_0_20px_rgba(0,240,255,0.4)] transition-all active:scale-95">
+                    <i class="fa-solid fa-play"></i> เริ่มเล่นเกม
+                </button>
+
+                <div class="grid grid-cols-2 gap-3 pt-2">
+                    <button onclick="openTeacherModal()" class="py-3 rounded-xl bg-slate-800 border border-slate-600 hover:border-brand-primary text-white font-bold transition-all text-sm">
+                        <i class="fa-solid fa-sliders text-brand-primary"></i> ตั้งค่าโหมดครู
+                    </button>
+                    <button onclick="openLeaderboardModal()" class="py-3 rounded-xl bg-slate-800 border border-slate-600 hover:border-brand-warning text-white font-bold transition-all text-sm">
+                        <i class="fa-solid fa-trophy text-brand-warning"></i> ตารางคะแนน
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Credit Footer -->
+        <div class="absolute bottom-4 text-center text-[10px] md:text-xs text-slate-500 font-medium z-10">
+            นายวรพันธ์ บัวผัน ครูโรงเรียนสุเหร่าคลองหนึ่ง(มานะราษฎร์บำรุง) เขตคลองสามวา กรุงเทพมหานคร
+        </div>
+    </div>
+
+    <!-- TEACHER SETTINGS MODAL -->
+    <div id="teacher-modal" class="fixed inset-0 z-50 bg-brand-dark/90 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+        <div class="max-w-md w-full glass-panel rounded-3xl p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto custom-scrollbar">
+            <h3 class="text-2xl font-black text-brand-primary mb-6 border-b border-slate-700 pb-3">
+                <i class="fa-solid fa-gear"></i> ตั้งค่าโหมดครู
+            </h3>
+
+            <div class="space-y-5 text-left">
+                <!-- Mode Selection -->
+                <div>
+                    <label class="block text-sm font-bold text-slate-300 mb-2">โหมดการเล่น</label>
+                    <div class="grid grid-cols-2 gap-2">
+                        <label class="flex items-center gap-2 p-3 rounded-lg border border-brand-primary bg-brand-primary/10 cursor-pointer" id="mode-label-time">
+                            <input type="radio" name="gameMode" value="time" checked class="hidden" onchange="updateModeUI()">
+                            <i class="fa-solid fa-stopwatch text-brand-primary"></i>
+                            <span class="text-sm font-bold">แข่งขันเวลา</span>
+                        </label>
+                        <label class="flex items-center gap-2 p-3 rounded-lg border border-slate-700 bg-slate-800 cursor-pointer" id="mode-label-survival">
+                            <input type="radio" name="gameMode" value="survival" class="hidden" onchange="updateModeUI()">
+                            <i class="fa-solid fa-heart-pulse text-brand-secondary"></i>
+                            <span class="text-sm font-bold">เอาชีวิตรอด</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Time Configs -->
+                <div id="config-time-attack">
+                    <label class="block text-sm font-bold text-slate-300 mb-2">เวลาแข่งขันทั้งหมด (วินาที)</label>
+                    <input type="hidden" id="setting-total-time" value="60">
+                    <div class="grid grid-cols-4 gap-2">
+                        <button type="button" onclick="selectBtn(this, 'setting-total-time', '30')" class="py-2 rounded-xl border border-slate-700 bg-slate-800 text-slate-300 font-bold text-sm transition-all">30</button>
+                        <button type="button" onclick="selectBtn(this, 'setting-total-time', '60')" class="py-2 rounded-xl border border-brand-primary bg-brand-primary/20 text-white font-bold text-sm transition-all">60</button>
+                        <button type="button" onclick="selectBtn(this, 'setting-total-time', '90')" class="py-2 rounded-xl border border-slate-700 bg-slate-800 text-slate-300 font-bold text-sm transition-all">90</button>
+                        <button type="button" onclick="selectBtn(this, 'setting-total-time', '120')" class="py-2 rounded-xl border border-slate-700 bg-slate-800 text-slate-300 font-bold text-sm transition-all">120</button>
+                    </div>
+                </div>
+                <div id="config-survival" class="hidden">
+                    <label class="block text-sm font-bold text-slate-300 mb-2">เวลาต่อข้อ (วินาที)</label>
+                    <input type="hidden" id="setting-survival-time" value="10">
+                    <div class="grid grid-cols-4 gap-2">
+                        <button type="button" onclick="selectBtn(this, 'setting-survival-time', '5')" class="py-2 rounded-xl border border-slate-700 bg-slate-800 text-slate-300 font-bold text-sm transition-all">5s</button>
+                        <button type="button" onclick="selectBtn(this, 'setting-survival-time', '10')" class="py-2 rounded-xl border border-brand-primary bg-brand-primary/20 text-white font-bold text-sm transition-all">10s</button>
+                        <button type="button" onclick="selectBtn(this, 'setting-survival-time', '15')" class="py-2 rounded-xl border border-slate-700 bg-slate-800 text-slate-300 font-bold text-sm transition-all">15s</button>
+                        <button type="button" onclick="selectBtn(this, 'setting-survival-time', '20')" class="py-2 rounded-xl border border-slate-700 bg-slate-800 text-slate-300 font-bold text-sm transition-all">20s</button>
+                    </div>
+                </div>
+
+                <!-- Difficulty -->
+                <div>
+                    <label class="block text-sm font-bold text-slate-300 mb-2">ความยาก</label>
+                    <input type="hidden" id="setting-difficulty" value="medium">
+                    <div class="grid grid-cols-3 gap-2">
+                        <button type="button" onclick="selectBtn(this, 'setting-difficulty', 'easy')" class="py-2 rounded-xl border border-slate-700 bg-slate-800 text-slate-300 font-bold text-sm transition-all">ง่าย</button>
+                        <button type="button" onclick="selectBtn(this, 'setting-difficulty', 'medium')" class="py-2 rounded-xl border border-brand-primary bg-brand-primary/20 text-white font-bold text-sm transition-all">ปานกลาง</button>
+                        <button type="button" onclick="selectBtn(this, 'setting-difficulty', 'hard')" class="py-2 rounded-xl border border-slate-700 bg-slate-800 text-slate-300 font-bold text-sm transition-all">ยาก</button>
+                    </div>
+                    <div class="flex justify-between text-[10px] text-slate-400 mt-1 px-1">
+                        <span>(เลข 1-10)</span>
+                        <span>(เลข 11-30)</span>
+                        <span>(เลข 31-99)</span>
+                    </div>
+                </div>
+
+                <!-- Sensitivity -->
+                <div>
+                    <label class="block text-sm font-bold text-slate-300 mb-1">ระยะสัมผัสลูกโป่ง (Sensitivity)</label>
+                    <input type="range" id="setting-sensitivity" min="50" max="120" value="85" class="w-full accent-brand-primary">
+                    <div class="flex justify-between text-[10px] text-slate-400">
+                        <span>แตะยาก (แม่นยำ)</span>
+                        <span>แตะง่าย (วงกว้าง)</span>
+                    </div>
+                </div>
+
+                <!-- Bubble Color -->
+                <div>
+                    <label class="block text-sm font-bold text-slate-300 mb-2">สีลูกโป่งคำตอบ</label>
+                    <input type="color" id="setting-color" value="#00F0FF" class="w-16 h-10 rounded bg-transparent border-0 cursor-pointer">
+                </div>
+            </div>
+
+            <div class="mt-6 flex gap-3">
+                <button onclick="closeTeacherModal()" class="flex-1 py-3 rounded-xl bg-slate-700 text-white font-bold">ยกเลิก</button>
+                <button onclick="saveTeacherSettings()" class="flex-1 py-3 rounded-xl bg-brand-primary text-black font-black">บันทึก</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- LEADERBOARD MODAL -->
+    <div id="leaderboard-modal" class="fixed inset-0 z-50 bg-brand-dark/90 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+        <div class="max-w-md w-full glass-panel rounded-3xl p-6 shadow-2xl relative max-h-[90vh] flex flex-col">
+            <div class="flex justify-between items-center mb-4 border-b border-slate-700 pb-3">
+                <h3 class="text-2xl font-black text-brand-warning">
+                    <i class="fa-solid fa-trophy"></i> Top 10 กระดานผู้นำ
+                </h3>
+                <button onclick="closeLeaderboardModal()" class="text-slate-400 hover:text-white text-xl"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+
+            <div class="overflow-y-auto custom-scrollbar flex-1 pr-2">
+                <table class="w-full text-left border-collapse text-sm">
+                    <thead>
+                        <tr class="text-slate-400 border-b border-slate-700/50">
+                            <th class="py-2 px-1 text-center w-10">อันดับ</th>
+                            <th class="py-2 px-1">ชื่อ</th>
+                            <th class="py-2 px-1 text-center">โหมด</th>
+                            <th class="py-2 px-1 text-center">คะแนน</th>
+                        </tr>
+                    </thead>
+                    <tbody id="leaderboard-list" class="text-white font-medium">
+                        <!-- Populated by JS -->
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="mt-4 pt-3 border-t border-slate-700 text-center">
+                <button onclick="clearLeaderboard()" class="text-xs text-brand-secondary hover:underline">ล้างข้อมูลทั้งหมด</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- GAME OVER MODAL -->
+    <div id="results-modal" class="fixed inset-0 z-50 bg-brand-dark/95 backdrop-blur-md flex items-center justify-center p-4 hidden">
+        <div class="max-w-md w-full glass-panel rounded-3xl p-8 text-center border-brand-warning shadow-[0_0_30px_rgba(255,222,0,0.3)]">
+            <h2 id="result-title" class="text-4xl font-black text-white mb-2">จบเกม!</h2>
+            <p id="result-reason" class="text-brand-secondary font-bold text-sm mb-6">หมดเวลาการแข่งขัน</p>
+
+            <div class="grid grid-cols-3 gap-3 mb-8">
+                <div class="bg-slate-900/80 p-3 rounded-2xl border border-brand-warning/30">
+                    <div class="text-2xl mb-1">🏆</div>
+                    <div id="res-score" class="text-3xl font-black text-brand-warning">0</div>
+                    <div class="text-[10px] text-slate-400 mt-1">คะแนนรวม</div>
+                </div>
+                <div class="bg-slate-900/80 p-3 rounded-2xl border border-brand-primary/30">
+                    <div class="text-2xl mb-1">🏃</div>
+                    <div id="res-taps" class="text-2xl font-black text-brand-primary mt-1">0</div>
+                    <div class="text-[10px] text-slate-400 mt-1">แตะสำเร็จ</div>
+                </div>
+                <div class="bg-slate-900/80 p-3 rounded-2xl border border-[#00FF66]/30">
+                    <div class="text-2xl mb-1">⚡</div>
+                    <div id="res-avg-time" class="text-2xl font-black text-[#00FF66] mt-1">0s</div>
+                    <div class="text-[10px] text-slate-400 mt-1">เวลาเฉลี่ย/ข้อ</div>
+                </div>
+            </div>
+
+            <div class="flex flex-col gap-3">
+                <button onclick="requestStartGame()" class="w-full py-4 rounded-xl bg-brand-primary text-black font-black text-lg">
+                    <i class="fa-solid fa-rotate-right"></i> เล่นอีกครั้ง
+                </button>
+                <button onclick="returnToMain()" class="w-full py-3 rounded-xl bg-slate-800 text-white font-bold">
+                    <i class="fa-solid fa-house"></i> กลับหน้าหลัก
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let gameState = {
+            isPlaying: false,
+            playerName: '',
+            score: 0,
+            successfulTaps: 0,
+            questionsPlayed: 0,
+            
+            // Settings
+            gameMode: 'time', // 'time' or 'survival'
+            timeLimitTotal: 60,
+            timeLimitPerQuestion: 10,
+            difficulty: 'medium',
+            sensitivity: 85,
+            baseColor: '#00F0FF',
+            
+            // Runtime Data
+            timeLeft: 0,
+            timerInterval: null,
+            gameStartTime: 0,
+            questionStartTime: 0,
+            
+            isCooldown: false, // 1s cool down after answer
+            isBonusRound: false,
+            
+            currentQuestion: null,
+            hands: []
+        };
+
+        // DOM Elements
+        const webcamEl = document.getElementById('webcam');
+        const canvasEl = document.getElementById('game-canvas');
+        const ctx = canvasEl.getContext('2d');
+        const questionText = document.getElementById('question-text');
+        
+        let detector = null;
+        let lastFrameTime = performance.now();
+
+        let synths = {};
+        
+        async function initAudio() {
+            await Tone.start();
+            if(Object.keys(synths).length > 0) return; // Already init
+
+            // Correct Sound
+            synths.correct = new Tone.PolySynth(Tone.Synth, {
+                oscillator: { type: 'triangle' },
+                envelope: { attack: 0.05, decay: 0.1, sustain: 0.3, release: 1 }
+            }).toDestination();
+
+            // Wrong Sound
+            synths.wrong = new Tone.Synth({
+                oscillator: { type: 'sawtooth' },
+                envelope: { attack: 0.1, decay: 0.2, sustain: 0.2, release: 0.5 }
+            }).toDestination();
+            synths.wrong.volume.value = -5;
+
+            // Electricity/Hover Sound
+            synths.hover = new Tone.NoiseSynth({
+                noise: { type: 'pink' },
+                envelope: { attack: 0.01, decay: 0.1, sustain: 0, release: 0.1 }
+            }).toDestination();
+            synths.hover.volume.value = -15;
+
+            // Bonus Sound
+            synths.bonus = new Tone.PolySynth(Tone.Synth).toDestination();
+            synths.bonus.volume.value = -5;
+        }
+
+        function playSound(type) {
+            if(!synths[type]) return;
+            const now = Tone.now();
+            if (type === 'correct') {
+                synths.correct.triggerAttackRelease(["C5", "E5", "G5"], "8n", now);
+            } else if (type === 'wrong') {
+                synths.wrong.triggerAttackRelease("C3", "4n", now);
+            } else if (type === 'hover') {
+                // Throttle hover sound to prevent distortion
+                if (!gameState.lastHoverSound || Date.now() - gameState.lastHoverSound > 80) {
+                    synths.hover.triggerAttackRelease("16n", now);
+                    gameState.lastHoverSound = Date.now();
+                }
+            } else if (type === 'bonus') {
+                synths.bonus.triggerAttackRelease(["G4", "C5", "E5", "G5"], "4n", now);
+            }
+        }
+
+        async function setupCamera() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'user' },
+                    audio: false
+                });
+                webcamEl.srcObject = stream;
+                return new Promise(resolve => {
+                    webcamEl.onloadedmetadata = () => {
+                        webcamEl.play();
+                        resolve(true);
+                    };
+                });
+            } catch (e) {
+                alert('ไม่สามารถเข้าถึงกล้องได้ กรุณาอนุญาตการใช้งานกล้อง');
+                return false;
+            }
+        }
+
+        async function initAI() {
+            if (detector) return true;
+            const model = poseDetection.SupportedModels.MoveNet;
+            const config = { modelType: poseDetection.movenet.modelType.SINGLEPOSE_LIGHTNING };
+            detector = await poseDetection.createDetector(model, config);
+            return true;
+        }
+
+        // Resize Canvas
+        function resize() {
+            canvasEl.width = window.innerWidth;
+            canvasEl.height = window.innerHeight;
+            if(gameState.currentQuestion && !gameState.isCooldown) generateBubbles(); 
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        function generateQuestion() {
+            gameState.questionsPlayed++;
+            
+            // Check Bonus Round (Every 10th question)
+            gameState.isBonusRound = (gameState.questionsPlayed % 10 === 0 && gameState.questionsPlayed > 0);
+            
+            let num1, num2, num3;
+            let correctAns;
+            
+            if (gameState.isBonusRound) {
+                // Bonus Round: ลบ 3 จำนวน
+                let maxA = gameState.difficulty === 'easy' ? 10 : 
+                           gameState.difficulty === 'medium' ? 20 : 50;
+                           
+                num1 = Math.floor(Math.random() * (maxA - 2)) + 3; // ตัวตั้งอย่างน้อยคือ 3
+                num2 = Math.floor(Math.random() * (num1 - 2)) + 1; // ตัวลบตัวแรก (เหลือพื้นที่ให้ตัวที่สอง)
+                num3 = Math.floor(Math.random() * (num1 - num2)) + 1; // ตัวลบตัวที่สอง (รับประกันผลลัพธ์ >= 0)
+                
+                correctAns = num1 - num2 - num3;
+                questionText.innerText = `${num1} - ${num2} - ${num3} = ?`;
+                
+                document.getElementById('bonus-badge').classList.remove('hidden');
+                playSound('bonus');
+                
+                if(gameState.gameMode === 'survival') gameState.timeLeft = 10;
+                
+            } else {
+                document.getElementById('bonus-badge').classList.add('hidden');
+                
+                let maxVal = gameState.difficulty === 'easy' ? 10 : 
+                             gameState.difficulty === 'medium' ? 30 : 99;
+                             
+                num1 = Math.floor(Math.random() * (maxVal - 2)) + 3; // อย่างน้อยคือ 3
+                num2 = Math.floor(Math.random() * (num1 - 1)) + 1; // 1 ถึง num1-1
+                
+                correctAns = num1 - num2;
+                questionText.innerText = `${num1} - ${num2} = ?`;
+                
+                if(gameState.gameMode === 'survival') gameState.timeLeft = gameState.timeLimitPerQuestion;
+            }
+            
+            // Distractors
+            let options = new Set([correctAns]);
+            while(options.size < 4) {
+                let offset = Math.floor(Math.random() * 5) + 1;
+                let isAdd = Math.random() > 0.5;
+                let wrong = isAdd ? correctAns + offset : correctAns - offset;
+                if (wrong >= 0) options.add(wrong);
+            }
+            
+            let optsArr = Array.from(options).sort(() => Math.random() - 0.5);
+            
+            gameState.currentQuestion = {
+                num1, num2, correctAns,
+                options: optsArr,
+                bubbles: []
+            };
+            
+            gameState.questionStartTime = Date.now();
+            
+            generateBubbles();
+            updateHUD();
+        }
+
+        function generateBubbles() {
+            if(!gameState.currentQuestion) return;
+            const w = canvasEl.width;
+            const h = canvasEl.height;
+            const count = 4;
+            const spacing = w / (count + 1);
+            
+            // Y position: approx 65% of screen height (lower middle)
+            const yPos = h * 0.65; 
+            const radius = Math.min(w * 0.12, 100); // Responsive size
+            
+            gameState.currentQuestion.bubbles = gameState.currentQuestion.options.map((val, i) => {
+                return {
+                    val: val,
+                    isCorrect: val === gameState.currentQuestion.correctAns,
+                    x: spacing * (i + 1),
+                    y: yPos,
+                    radius: radius,
+                    hoverTime: 0, // Time accumulated in ms
+                    floatOffset: Math.random() * Math.PI * 2
+                };
+            });
+        }
+
+        async function renderLoop() {
+            if (!gameState.isPlaying) return;
+            
+            const now = performance.now();
+            const dt = now - lastFrameTime;
+            lastFrameTime = now;
+
+            ctx.save();
+            ctx.clearRect(0, 0, canvasEl.width, canvasEl.height);
+
+            // 1. Draw Camera (Mirrored)
+            if (webcamEl.readyState === 4) {
+                ctx.translate(canvasEl.width, 0);
+                ctx.scale(-1, 1);
+                ctx.drawImage(webcamEl, 0, 0, canvasEl.width, canvasEl.height);
+                ctx.restore();
+            } else {
+                ctx.restore();
+            }
+
+            // Dark overlay
+            ctx.fillStyle = 'rgba(11, 15, 25, 0.4)';
+            ctx.fillRect(0, 0, canvasEl.width, canvasEl.height);
+
+            // 2. Pose Detection
+            let detectedHands = [];
+            if (detector && webcamEl.readyState === 4 && !gameState.isCooldown) {
+                try {
+                    const poses = await detector.estimatePoses(webcamEl);
+                    if (poses.length > 0) {
+                        const kp = poses[0].keypoints;
+                        const left = kp.find(k => k.name === 'left_wrist');
+                        const right = kp.find(k => k.name === 'right_wrist');
+                        
+                        [left, right].forEach(w => {
+                            if (w && w.score > 0.3) {
+                                // Mirror mapping
+                                const sx = canvasEl.width - (w.x / webcamEl.videoWidth * canvasEl.width);
+                                const sy = w.y / webcamEl.videoHeight * canvasEl.height;
+                                detectedHands.push({x: sx, y: sy});
+                            }
+                        });
+                        drawSkeleton(kp);
+                    }
+                } catch(e){}
+            }
+            
+            // 3. Process Bubbles
+            if(gameState.currentQuestion && gameState.currentQuestion.bubbles) {
+                const time = Date.now() * 0.002;
+                let anyHovering = false;
+
+                gameState.currentQuestion.bubbles.forEach(bubble => {
+                    // Floating animation
+                    const floatY = bubble.y + Math.sin(time + bubble.floatOffset) * 10;
+                    
+                    let isHovered = false;
+                    let activeHand = null;
+
+                    if(!gameState.isCooldown) {
+                        detectedHands.forEach(hand => {
+                            const dist = Math.hypot(hand.x - bubble.x, hand.y - floatY);
+                            if (dist < gameState.sensitivity) {
+                                isHovered = true;
+                                activeHand = hand;
+                                anyHovering = true;
+                            }
+                        });
+                    }
+
+                    // Hover logic (0.8s hold required)
+                    if (isHovered) {
+                        bubble.hoverTime += dt;
+                        drawElectricity(activeHand.x, activeHand.y, bubble.x, floatY);
+                        playSound('hover');
+                        
+                        if (bubble.hoverTime >= 800) { // 800ms = 0.8s
+                            handleAnswer(bubble.isCorrect);
+                            bubble.hoverTime = 0;
+                        }
+                    } else {
+                        bubble.hoverTime = Math.max(0, bubble.hoverTime - dt * 2); // Decay
+                    }
+
+                    drawBubble(bubble.x, floatY, bubble.radius, bubble.val, bubble.hoverTime, gameState.isCooldown);
+                });
+            }
+
+            // 4. Draw Hand Pointers
+            detectedHands.forEach(h => drawHandMarker(h.x, h.y));
+
+            requestAnimationFrame(renderLoop);
+        }
+
+        function drawElectricity(hx, hy, bx, by) {
+            ctx.save();
+            ctx.beginPath();
+            ctx.moveTo(hx, hy);
+            
+            // Jagged line
+            const segments = 5;
+            for(let i=1; i<=segments; i++) {
+                const ratio = i / segments;
+                const px = hx + (bx - hx) * ratio + (Math.random() - 0.5) * 40;
+                const py = hy + (by - hy) * ratio + (Math.random() - 0.5) * 40;
+                ctx.lineTo(px, py);
+            }
+            
+            ctx.strokeStyle = '#00F0FF';
+            ctx.lineWidth = 4;
+            ctx.shadowColor = '#00F0FF';
+            ctx.shadowBlur = 15;
+            ctx.stroke();
+            
+            // Inner white core
+            ctx.strokeStyle = '#FFF';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        function drawSkeleton(keypoints) {
+            ctx.fillStyle = 'rgba(0, 240, 255, 0.5)';
+            keypoints.forEach(kp => {
+                if (kp.score > 0.4) {
+                    const sx = canvasEl.width - (kp.x / webcamEl.videoWidth * canvasEl.width);
+                    const sy = kp.y / webcamEl.videoHeight * canvasEl.height;
+                    ctx.beginPath();
+                    ctx.arc(sx, sy, 5, 0, Math.PI*2);
+                    ctx.fill();
+                }
+            });
+        }
+
+        function drawBubble(x, y, radius, val, hoverTime, isCooldown) {
+            ctx.save();
+            
+            const progress = hoverTime / 800; // 0 to 1
+            const baseColor = isCooldown ? '#64748B' : gameState.baseColor; // Gray if cooldown
+            
+            // Hover Charge Ring
+            if (progress > 0 && !isCooldown) {
+                ctx.beginPath();
+                ctx.arc(x, y, radius + 15, -Math.PI/2, (-Math.PI/2) + (Math.PI*2 * progress));
+                ctx.strokeStyle = '#FFDE00';
+                ctx.lineWidth = 8;
+                ctx.lineCap = 'round';
+                ctx.shadowColor = '#FFDE00';
+                ctx.shadowBlur = 15;
+                ctx.stroke();
+            }
+
+            // Base bubble
+            ctx.beginPath();
+            ctx.arc(x, y, radius, 0, Math.PI*2);
+            ctx.fillStyle = isCooldown ? 'rgba(30, 41, 59, 0.9)' : 'rgba(26, 35, 58, 0.9)';
+            ctx.fill();
+            
+            ctx.lineWidth = progress > 0 ? 6 : 3;
+            ctx.strokeStyle = baseColor;
+            if(!isCooldown) {
+                ctx.shadowColor = baseColor;
+                ctx.shadowBlur = progress > 0 ? 30 : 10;
+            }
+            ctx.stroke();
+
+            // Text
+            ctx.shadowBlur = 0;
+            ctx.font = `900 ${Math.floor(radius * 0.9)}px 'Prompt'`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            
+            // Massive outline for bubble text too
+            ctx.strokeStyle = '#000';
+            ctx.lineWidth = Math.floor(radius * 0.15);
+            ctx.lineJoin = 'round';
+            ctx.strokeText(val, x, y);
+            
+            ctx.fillStyle = isCooldown ? '#94A3B8' : '#FFF';
+            ctx.fillText(val, x, y);
+
+            ctx.restore();
+        }
+
+        function drawHandMarker(x, y) {
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(x, y, 15, 0, Math.PI*2);
+            ctx.fillStyle = 'rgba(255, 0, 60, 0.8)';
+            ctx.shadowColor = '#FF003C';
+            ctx.shadowBlur = 15;
+            ctx.fill();
+            ctx.lineWidth = 2;
+            ctx.strokeStyle = '#FFF';
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        function handleAnswer(isCorrect) {
+            if(gameState.isCooldown) return;
+            gameState.isCooldown = true;
+            
+            const fbc = document.getElementById('feedback-container');
+            
+            if (isCorrect) {
+                gameState.successfulTaps++;
+                const pts = gameState.isBonusRound ? 2 : 1;
+                gameState.score += pts;
+                playSound('correct');
+                
+                fbc.innerHTML = `<span class="text-[#00FF66]">✅ ถูกต้อง! (+${pts})</span>`;
+                confetti({ particleCount: 80, spread: 70, origin: { y: 0.8 } });
+            } else {
+                gameState.score = Math.max(0, gameState.score - 1); // No negative score
+                playSound('wrong');
+                
+                fbc.innerHTML = `<span class="text-[#FF003C]">❌ ผิด! (-1)</span>`;
+                
+                // Survival mode instant death on wrong answer
+                if(gameState.gameMode === 'survival') {
+                    setTimeout(() => endGame("ตอบผิดในโหมดเอาชีวิตรอด!"), 1000);
+                    showFeedbackEffect(fbc);
+                    return;
+                }
+            }
+            
+            updateHUD();
+            showFeedbackEffect(fbc);
+
+            // 1 Second Cooldown phase before next question
+            questionText.innerText = "⏳ เตรียมตัว...";
+            questionText.classList.remove('text-stroke-massive');
+            questionText.classList.add('text-5xl', 'text-slate-400', 'text-stroke-none');
+
+            setTimeout(() => {
+                gameState.isCooldown = false;
+                questionText.classList.add('text-stroke-massive');
+                questionText.classList.remove('text-5xl', 'text-slate-400', 'text-stroke-none');
+                generateQuestion();
+            }, 1000);
+        }
+
+        function showFeedbackEffect(el) {
+            el.classList.remove('opacity-0', 'scale-50');
+            el.classList.add('opacity-100', 'scale-100', 'animate-bounce');
+            setTimeout(() => {
+                el.classList.add('opacity-0', 'scale-50');
+                el.classList.remove('opacity-100', 'scale-100', 'animate-bounce');
+            }, 900);
+        }
+
+        function timerTick() {
+            if (!gameState.isPlaying || gameState.isCooldown) return;
+            
+            gameState.timeLeft--;
+            updateHUD();
+
+            if (gameState.timeLeft <= 5) {
+                document.getElementById('timer-box').classList.replace('border-brand-primary/50', 'border-brand-secondary');
+                document.getElementById('timer-box').classList.add('animate-pulse');
+            } else {
+                document.getElementById('timer-box').classList.replace('border-brand-secondary', 'border-brand-primary/50');
+                document.getElementById('timer-box').classList.remove('animate-pulse');
+            }
+
+            if (gameState.timeLeft <= 0) {
+                endGame(gameState.gameMode === 'survival' ? "หมดเวลาตอบคำถาม!" : "หมดเวลาการแข่งขัน!");
+            }
+        }
+
+        function updateHUD() {
+            document.getElementById('score-display').innerText = gameState.score;
+            document.getElementById('timer-display').innerText = gameState.timeLeft;
+            document.getElementById('timer-label').innerText = gameState.gameMode === 'time' ? 'เวลาเหลือ' : 'เวลาข้อนี้';
+        }
+
+        async function requestStartGame() {
+            const name = document.getElementById('player-name-input').value.trim();
+            if(!name) {
+                alert('กรุณากรอกชื่อผู้เล่นก่อนเริ่มเกม!');
+                document.getElementById('player-name-input').focus();
+                return;
+            }
+            gameState.playerName = name;
+            
+            await initAudio();
+            
+            document.getElementById('start-menu').classList.add('hidden');
+            document.getElementById('results-modal').classList.add('hidden');
+            document.getElementById('game-hud').classList.remove('hidden');
+            document.getElementById('question-board-container').classList.remove('hidden');
+            document.getElementById('btn-home').classList.remove('hidden');
+            webcamEl.classList.remove('hidden');
+
+            // Apply Settings
+            gameState.gameMode = document.querySelector('input[name="gameMode"]:checked').value;
+            gameState.timeLimitTotal = parseInt(document.getElementById('setting-total-time').value);
+            gameState.timeLimitPerQuestion = parseInt(document.getElementById('setting-survival-time').value);
+            gameState.difficulty = document.getElementById('setting-difficulty').value;
+            gameState.sensitivity = parseInt(document.getElementById('setting-sensitivity').value);
+            gameState.baseColor = document.getElementById('setting-color').value;
+
+            // Reset States
+            gameState.isPlaying = true;
+            gameState.isCooldown = false;
+            gameState.score = 0;
+            gameState.successfulTaps = 0;
+            gameState.questionsPlayed = 0;
+            gameState.timeLeft = gameState.gameMode === 'time' ? gameState.timeLimitTotal : gameState.timeLimitPerQuestion;
+            gameState.gameStartTime = Date.now();
+            
+            updateHUD();
+            
+            await setupCamera();
+            await initAI();
+            
+            generateQuestion();
+            
+            if (gameState.timerInterval) clearInterval(gameState.timerInterval);
+            gameState.timerInterval = setInterval(timerTick, 1000);
+            
+            lastFrameTime = performance.now();
+            requestAnimationFrame(renderLoop);
+        }
+
+        function endGame(reasonStr) {
+            gameState.isPlaying = false;
+            clearInterval(gameState.timerInterval);
+            
+            const totalSecs = Math.floor((Date.now() - gameState.gameStartTime) / 1000);
+            const avg = gameState.successfulTaps > 0 ? (totalSecs / gameState.successfulTaps).toFixed(1) : 0;
+            
+            document.getElementById('result-reason').innerText = reasonStr;
+            document.getElementById('res-score').innerText = gameState.score;
+            document.getElementById('res-taps').innerText = gameState.successfulTaps;
+            document.getElementById('res-avg-time').innerText = `${avg}s`;
+            
+            document.getElementById('results-modal').classList.remove('hidden');
+            document.getElementById('btn-home').classList.add('hidden');
+            
+            saveScore();
+        }
+
+        function confirmExitGame() {
+            if(confirm("ต้องการออกจากเกมและกลับสู่หน้าหลักหรือไม่? (คะแนนจะไม่ถูกบันทึก)")) {
+                returnToMain();
+            }
+        }
+
+        function returnToMain() {
+            gameState.isPlaying = false;
+            clearInterval(gameState.timerInterval);
+            document.getElementById('game-hud').classList.add('hidden');
+            document.getElementById('question-board-container').classList.add('hidden');
+            document.getElementById('btn-home').classList.add('hidden');
+            document.getElementById('results-modal').classList.add('hidden');
+            document.getElementById('start-menu').classList.remove('hidden');
+        }
+
+        function openTeacherModal() { document.getElementById('teacher-modal').classList.remove('hidden'); }
+        function closeTeacherModal() { document.getElementById('teacher-modal').classList.add('hidden'); }
+        
+        function updateModeUI() {
+            const mode = document.querySelector('input[name="gameMode"]:checked').value;
+            const timeAtkBox = document.getElementById('config-time-attack');
+            const survBox = document.getElementById('config-survival');
+            const lblTime = document.getElementById('mode-label-time');
+            const lblSurv = document.getElementById('mode-label-survival');
+
+            if (mode === 'time') {
+                timeAtkBox.classList.remove('hidden');
+                survBox.classList.add('hidden');
+                lblTime.classList.replace('border-slate-700', 'border-brand-primary');
+                lblTime.classList.replace('bg-slate-800', 'bg-brand-primary/10');
+                lblSurv.classList.replace('border-brand-secondary', 'border-slate-700');
+                lblSurv.classList.replace('bg-brand-secondary/10', 'bg-slate-800');
+            } else {
+                timeAtkBox.classList.add('hidden');
+                survBox.classList.remove('hidden');
+                lblSurv.classList.replace('border-slate-700', 'border-brand-secondary');
+                lblSurv.classList.replace('bg-slate-800', 'bg-brand-secondary/10');
+                lblTime.classList.replace('border-brand-primary', 'border-slate-700');
+                lblTime.classList.replace('bg-brand-primary/10', 'bg-slate-800');
+            }
+        }
+
+        function saveTeacherSettings() {
+            alert('บันทึกการตั้งค่าเรียบร้อยแล้ว');
+            closeTeacherModal();
+        }
+
+        function saveScore() {
+            if(gameState.score <= 0) return; // Don't save 0 scores
+            
+            const record = {
+                name: gameState.playerName,
+                score: gameState.score,
+                mode: gameState.gameMode === 'time' ? 'เวลา' : 'เอาชีวิตรอด',
+                date: new Date().toLocaleDateString('th-TH', { month: 'short', day: 'numeric' })
+            };
+            
+            let board = JSON.parse(localStorage.getItem('ผลลบหรรษา_leaderboard') || '[]');
+            board.push(record);
+            board.sort((a, b) => b.score - a.score);
+            board = board.slice(0, 10);
+            localStorage.setItem('ผลลบหรรษา_leaderboard', JSON.stringify(board));
+        }
+
+        function openLeaderboardModal() {
+            const list = document.getElementById('leaderboard-list');
+            list.innerHTML = '';
+            
+            const board = JSON.parse(localStorage.getItem('ผลลบหรรษา_leaderboard') || '[]');
+            
+            if(board.length === 0) {
+                list.innerHTML = `<tr><td colspan="4" class="text-center py-4 text-slate-500">ยังไม่มีประวัติการเล่น</td></tr>`;
+            } else {
+                board.forEach((b, i) => {
+                    const badge = i===0 ? '🥇' : i===1 ? '🥈' : i===2 ? '🥉' : `#${i+1}`;
+                    list.innerHTML += `
+                        <tr class="border-b border-slate-700/50 hover:bg-slate-800/50">
+                            <td class="py-2 px-1 text-center font-bold text-brand-warning">${badge}</td>
+                            <td class="py-2 px-1 text-white">${b.name}</td>
+                            <td class="py-2 px-1 text-center text-xs text-slate-400">${b.mode}</td>
+                            <td class="py-2 px-1 text-center font-black text-brand-primary">${b.score}</td>
+                        </tr>
+                    `;
+                });
+            }
+            document.getElementById('leaderboard-modal').classList.remove('hidden');
+        }
+
+        function closeLeaderboardModal() {
+            document.getElementById('leaderboard-modal').classList.add('hidden');
+        }
+
+        function clearLeaderboard() {
+            if(confirm('ต้องการล้างข้อมูลกระดานผู้นำทั้งหมดหรือไม่?')) {
+                localStorage.removeItem('ผลลบหรรษา_leaderboard');
+                openLeaderboardModal();
+            }
+        }
+
+        // --- Helper สำหรับอัปเดตสถานะปุ่มกดในโหมดตั้งค่า ---
+        function selectBtn(btn, inputId, value) {
+            document.getElementById(inputId).value = value;
+            const siblings = btn.parentElement.children;
+            for(let i = 0; i < siblings.length; i++) {
+                siblings[i].classList.remove('border-brand-primary', 'bg-brand-primary/20', 'text-white');
+                siblings[i].classList.add('border-slate-700', 'bg-slate-800', 'text-slate-300');
+            }
+            btn.classList.remove('border-slate-700', 'bg-slate-800', 'text-slate-300');
+            btn.classList.add('border-brand-primary', 'bg-brand-primary/20', 'text-white');
+        }
+    </script>
+</body>
+</html>

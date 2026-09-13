@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>เกมฝึกทักษะการหาร - 10 Levels</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+    font-family:"Segoe UI",Tahoma,sans-serif;width:100vw;height:100vh;overflow:hidden;
+    background:linear-gradient(135deg,#fff8fb 0%,#f4faff 50%,#f8fff5 100%);color:#24345b
+}
+button{font-family:inherit}
+.bg{position:fixed;inset:0;overflow:hidden;pointer-events:none}
+.hill{position:absolute;border-radius:50%}
+.hill.one{width:55vw;height:25vw;left:-12vw;bottom:-12vw;background:#e7f5d5}
+.hill.two{width:55vw;height:28vw;right:-10vw;bottom:-14vw;background:#dff1ff}
+.hill.three{width:35vw;height:18vw;right:25vw;bottom:-10vw;background:#f0e7ff}
+.cloud{position:absolute;font-size:clamp(28px,4vw,60px);opacity:.65}
+.c1{left:4vw;top:25vh}.c2{right:5vw;top:18vh}
+.spark{position:absolute;font-size:clamp(18px,2vw,32px);opacity:.55}
+.s1{left:17vw;top:12vh}.s2{right:20vw;top:31vh}.s3{left:8vw;bottom:25vh}.s4{right:8vw;bottom:23vh}
+.screen{position:relative;z-index:2;width:100%;height:100%;display:flex;align-items:center;justify-content:center;padding:20px}
+.hidden{display:none!important}
+
+/* Level selection */
+.level-screen{width:min(1100px,94vw);text-align:center}
+.logo{font-size:clamp(32px,5vw,68px);font-weight:900;color:#30477f;margin-bottom:8px}
+.subtitle{font-size:clamp(16px,2vw,25px);color:#71809e;margin-bottom:28px}
+.level-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:18px;width:100%;max-width:950px;margin:auto}
+.level-btn{
+    min-height:150px;border:0;border-radius:30px;cursor:pointer;
+    box-shadow:0 10px 25px rgba(50,70,110,.10);transition:.2s;position:relative;color:#263b6b
+}
+.level-btn:hover:not(:disabled){transform:translateY(-5px) scale(1.02)}
+.level-btn:disabled{cursor:not-allowed;opacity:.72;filter:saturate(.65)}
+.level-num{display:block;font-size:clamp(35px,4vw,55px);font-weight:900}
+.level-label{display:block;font-size:18px;margin-top:4px}.lock{display:block;font-size:28px;margin-top:8px}
+.l1{background:#ffddea}.l2{background:#dcecff}.l3{background:#fff0c5}.l4{background:#dcf6e3}.l5{background:#eee3ff}
+.l6{background:#ffe2d6}.l7{background:#dff5f3}.l8{background:#e7e4ff}.l9{background:#fff0db}.l10{background:#dff0ff}
+.reset-progress{margin-top:25px;border:0;background:white;color:#70809f;border-radius:18px;padding:12px 22px;font-size:16px;cursor:pointer;box-shadow:0 6px 15px rgba(50,70,110,.08)}
+
+/* Game */
+.game-screen{align-items:stretch}
+.game{width:100%;height:100%;position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.topbar{position:absolute;top:18px;left:18px;right:18px;display:flex;justify-content:space-between;align-items:center}
+.timer{
+    width:112px;height:112px;border-radius:50%;background:white;border:7px solid #f7a7c6;
+    box-shadow:0 10px 25px rgba(50,70,110,.10);display:flex;flex-direction:column;align-items:center;justify-content:center
+}
+.timer strong{font-size:40px;color:#ef668f;line-height:1}.timer span{font-size:14px;color:#7c879c;margin-top:5px}
+.info{background:white;border-radius:24px;padding:13px 25px;box-shadow:0 8px 20px rgba(50,70,110,.08);font-size:22px;font-weight:800}
+.question-card{
+    width:min(76vw,1000px);min-height:240px;background:white;border-radius:42px;box-shadow:0 15px 35px rgba(50,70,110,.09);
+    display:flex;align-items:center;justify-content:center;margin:55px 0 28px
+}
+.question{font-size:clamp(70px,11vw,170px);font-weight:900;color:#30477f;line-height:1}
+.answers{width:min(76vw,1000px);display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.answer{
+    border:0;border-radius:30px;min-height:145px;font-size:clamp(45px,6vw,90px);font-weight:900;color:#29416f;
+    cursor:pointer;box-shadow:0 10px 20px rgba(50,70,110,.09);transition:.18s
+}
+.answer:hover:not(:disabled){transform:translateY(-4px) scale(1.01)}
+.answer:nth-child(1){background:#ffdce9}.answer:nth-child(2){background:#dcecff}
+.answer:nth-child(3){background:#fff0bf}.answer:nth-child(4){background:#d9f4e0}
+.answer:disabled{cursor:default}
+.feedback{height:36px;margin-top:12px;font-size:25px;font-weight:800}
+
+/* Result */
+.result-card{background:white;border-radius:42px;padding:50px 70px;text-align:center;box-shadow:0 18px 40px rgba(50,70,110,.10);max-width:700px;width:90vw}
+.result-icon{font-size:75px}.result-title{font-size:clamp(38px,5vw,65px);font-weight:900;color:#30477f;margin:10px 0}
+.result-score{font-size:28px;color:#657594;margin-bottom:28px}
+.result-buttons{display:flex;gap:15px;justify-content:center;flex-wrap:wrap}
+.primary,.secondary{border:0;border-radius:20px;padding:16px 28px;font-size:20px;font-weight:800;cursor:pointer}
+.primary{background:#ff88ad;color:white;box-shadow:0 8px 18px rgba(255,136,173,.25)}
+.secondary{background:#edf4ff;color:#39507d}
+.primary:hover,.secondary:hover{transform:translateY(-2px)}
+
+@media(max-width:800px){
+    .level-grid{grid-template-columns:repeat(2,1fr);gap:12px}.level-btn{min-height:110px;border-radius:22px}
+    .level-label{font-size:14px}.lock{font-size:20px}.timer{width:82px;height:82px;border-width:5px}
+    .timer strong{font-size:30px}.info{font-size:16px;padding:10px 15px}
+    .question-card,.answers{width:92vw}.question-card{min-height:180px;border-radius:30px;margin-top:60px}
+    .answer{min-height:100px;border-radius:22px}.result-card{padding:35px 20px}
+}
+</style>
+</head>
+<body>
+<div class="bg">
+    <div class="hill one"></div><div class="hill two"></div><div class="hill three"></div>
+    <div class="cloud c1">☁️</div><div class="cloud c2">☁️</div>
+    <div class="spark s1">✨</div><div class="spark s2">⭐</div><div class="spark s3">🌸</div><div class="spark s4">💖</div>
+</div>
+
+<section id="levelScreen" class="screen">
+    <div class="level-screen">
+        <div class="logo">🌟 เกมฝึกทักษะการหาร</div>
+        <div class="subtitle">ผ่านด่านทีละ Level เพื่อปลดล็อกด่านใหม่ 🔓</div>
+        <div id="levelGrid" class="level-grid"></div>
+        <button class="reset-progress" onclick="resetProgress()">↻ เริ่มความก้าวหน้าใหม่</button>
+    </div>
+</section>
+
+<section id="gameScreen" class="screen game-screen hidden">
+    <div class="game">
+        <div class="topbar">
+            <div class="timer"><strong id="timer">10</strong><span>วินาที</span></div>
+            <div class="info">Level <span id="levelNow">1</span> &nbsp;|&nbsp; ข้อ <span id="questionNow">1</span>/10 &nbsp;|&nbsp; ⭐ <span id="scoreNow">0</span></div>
+        </div>
+        <div class="question-card"><div id="question" class="question">24 ÷ 3</div></div>
+        <div id="answers" class="answers">
+            <button class="answer"></button><button class="answer"></button>
+            <button class="answer"></button><button class="answer"></button>
+        </div>
+        <div id="feedback" class="feedback"></div>
+    </div>
+</section>
+
+<section id="resultScreen" class="screen hidden">
+    <div class="result-card">
+        <div id="resultIcon" class="result-icon">🎉</div>
+        <div id="resultTitle" class="result-title">ภารกิจสำเร็จ!</div>
+        <div id="resultScore" class="result-score"></div>
+        <div class="result-buttons">
+            <button id="nextBtn" class="primary" onclick="nextLevel()">➡️ ไป Level ถัดไป</button>
+            <button class="secondary" onclick="showLevels()">🏠 เลือก Level</button>
+            <button id="retryBtn" class="secondary" onclick="retryLevel()">🔄 เล่นอีกครั้ง</button>
+        </div>
+    </div>
+</section>
+
+<script>
+const TOTAL_LEVELS=10, QUESTIONS_PER_LEVEL=10, TIME_LIMIT=10;
+let unlockedLevel=Number(localStorage.getItem("divisionUnlockedLevel")||1);
+let currentLevel=1,questionNumber=0,score=0,correctAnswer=0,timerId=null,timeLeft=TIME_LIMIT,gameOver=false;
+let questionSet=[],currentQuestionIndex=0;
+
+const levelScreen=document.getElementById("levelScreen"),gameScreen=document.getElementById("gameScreen"),resultScreen=document.getElementById("resultScreen");
+const levelGrid=document.getElementById("levelGrid"),timerEl=document.getElementById("timer"),levelNow=document.getElementById("levelNow");
+const questionNow=document.getElementById("questionNow"),scoreNow=document.getElementById("scoreNow"),questionEl=document.getElementById("question");
+const feedbackEl=document.getElementById("feedback"),buttons=[...document.querySelectorAll(".answer")];
+
+function renderLevels(){
+    levelGrid.innerHTML="";
+    for(let i=1;i<=TOTAL_LEVELS;i++){
+        const btn=document.createElement("button");
+        btn.className=`level-btn l${i}`;
+        btn.disabled=i>unlockedLevel;
+        btn.innerHTML=`<span class="level-num">${i}</span><span class="level-label">Level ${i}</span><span class="lock">${i<=unlockedLevel?"🔓":"🔒"}</span>`;
+        if(i<=unlockedLevel)btn.onclick=()=>startLevel(i);
+        levelGrid.appendChild(btn);
+    }
+}
+function showScreen(screen){[levelScreen,gameScreen,resultScreen].forEach(s=>s.classList.add("hidden"));screen.classList.remove("hidden");}
+
+/* สร้างชุดโจทย์ 10 ข้อที่ไม่ซ้ำกันภายใน Level */
+function buildQuestionSet(){
+    const maxDivisor=Math.min(12,currentLevel+2);
+    const maxQuotient=getMaxQuotient();
+    const pool=[];
+    for(let divisor=2;divisor<=maxDivisor;divisor++){
+        for(let quotient=2;quotient<=maxQuotient;quotient++){
+            pool.push({dividend:divisor*quotient,divisor,quotient});
+        }
+    }
+    shuffle(pool);
+    questionSet=pool.slice(0,QUESTIONS_PER_LEVEL);
+    currentQuestionIndex=0;
+}
+
+function startLevel(level){
+    currentLevel=level;questionNumber=0;score=0;gameOver=false;
+    levelNow.textContent=currentLevel;scoreNow.textContent=score;
+    buildQuestionSet();showScreen(gameScreen);nextQuestion();
+}
+function getMaxQuotient(){
+    if(currentLevel<=2)return 8;
+    if(currentLevel<=5)return 10;
+    if(currentLevel<=8)return 12;
+    return 15;
+}
+function nextQuestion(){
+    if(gameOver)return;
+    if(currentQuestionIndex>=questionSet.length){finishLevel(true);return;}
+    questionNumber++;currentQuestionIndex++;
+    const q=questionSet[currentQuestionIndex-1];
+    correctAnswer=q.quotient;
+    questionEl.textContent=`${q.dividend} ÷ ${q.divisor}`;
+    questionNow.textContent=questionNumber;feedbackEl.textContent="";
+    feedbackEl.style.color="#48a878";
+    let choices=[correctAnswer];
+    while(choices.length<4){
+        let wrong=correctAnswer+randomInt(-5,8);
+        if(wrong<1)wrong=randomInt(1,20);
+        if(!choices.includes(wrong))choices.push(wrong);
+    }
+    shuffle(choices);
+    buttons.forEach((btn,i)=>{btn.textContent=choices[i];btn.disabled=false;btn.style.opacity="1";btn.onclick=()=>checkAnswer(choices[i]);});
+    startTimer();
+}
+function startTimer(){
+    clearInterval(timerId);timeLeft=TIME_LIMIT;timerEl.textContent=timeLeft;
+    timerId=setInterval(()=>{
+        timeLeft--;timerEl.textContent=timeLeft;
+        if(timeLeft<=0){clearInterval(timerId);finishLevel(false,"หมดเวลา ⏰");}
+    },1000);
+}
+function checkAnswer(answer){
+    if(gameOver)return;clearInterval(timerId);
+    if(answer===correctAnswer){
+        score++;scoreNow.textContent=score;feedbackEl.textContent="✓ ถูกต้อง!";
+        buttons.forEach(b=>b.disabled=true);setTimeout(nextQuestion,300);
+    }else finishLevel(false,"ตอบผิด ❌");
+}
+function finishLevel(success,reason=""){
+    if(gameOver)return;gameOver=true;clearInterval(timerId);buttons.forEach(b=>b.disabled=true);
+    document.getElementById("resultIcon").textContent=success?"🎉":"💪";
+    document.getElementById("resultTitle").textContent=success?(currentLevel===TOTAL_LEVELS?"🏆 ภารกิจสำเร็จ!":`🎊 ผ่าน Level ${currentLevel}!`):"เกมจบ!";
+    document.getElementById("resultScore").textContent=success?`คะแนน ${score} / ${QUESTIONS_PER_LEVEL}`:`${reason}  •  คะแนน ${score} / ${QUESTIONS_PER_LEVEL}`;
+    const nextBtn=document.getElementById("nextBtn");
+    nextBtn.classList.toggle("hidden",!success||currentLevel>=TOTAL_LEVELS);
+    if(success&&currentLevel<TOTAL_LEVELS&&unlockedLevel<currentLevel+1){
+        unlockedLevel=currentLevel+1;localStorage.setItem("divisionUnlockedLevel",unlockedLevel);
+    }
+    document.getElementById("retryBtn").classList.remove("hidden");showScreen(resultScreen);
+}
+function nextLevel(){if(currentLevel<TOTAL_LEVELS)startLevel(currentLevel+1)}
+function retryLevel(){startLevel(currentLevel)}
+function showLevels(){renderLevels();showScreen(levelScreen)}
+function resetProgress(){
+    if(!confirm("ต้องการเริ่มความก้าวหน้าใหม่และล็อก Level 2–10 หรือไม่?"))return;
+    unlockedLevel=1;localStorage.setItem("divisionUnlockedLevel","1");renderLevels();
+}
+function randomInt(min,max){return Math.floor(Math.random()*(max-min+1))+min}
+function shuffle(arr){
+    for(let i=arr.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[arr[i],arr[j]]=[arr[j],arr[i]]}
+    return arr;
+}
+renderLevels();
+</script>
+</body>
+</html>
