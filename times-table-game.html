@@ -1,0 +1,1107 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ผลคูณหรรษา (เกมแตะผลคูณ)</title>
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Kanit', 'sans-serif'],
+                    },
+                    colors: {
+                        darkBase: '#121620',
+                        panelBase: '#1a202c',
+                        panelLighter: '#252d3d',
+                        neonCyan: '#00e5ff',
+                        neonPink: '#ff0055',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Custom CSS for Game & Animations -->
+    <style>
+        body {
+            font-family: 'Kanit', sans-serif;
+            background-color: #0f172a;
+            color: white;
+            overflow: hidden; /* Prevent scrolling during game */
+            touch-action: none;
+        }
+
+        /* Glassmorphism utilities */
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.85);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+
+        .setting-active {
+            background-color: rgba(0, 229, 255, 0.1);
+            border-color: #00e5ff;
+            color: #00e5ff;
+        }
+
+        .setting-inactive {
+            background-color: #252d3d;
+            border-color: transparent;
+            color: #94a3b8;
+        }
+
+        /* Slider Styling */
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 20px;
+            width: 20px;
+            border-radius: 50%;
+            background: #00e5ff;
+            cursor: pointer;
+            margin-top: -8px;
+            box-shadow: 0 0 10px #00e5ff;
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            cursor: pointer;
+            background: #475569;
+            border-radius: 2px;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.2); 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #475569; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #00e5ff; 
+        }
+
+        /* Animations */
+        @keyframes pulse-glow {
+            0% { text-shadow: 0 0 10px #00e5ff, 0 0 20px #00e5ff; }
+            50% { text-shadow: 0 0 20px #00e5ff, 0 0 30px #00e5ff, 0 0 40px #00e5ff; }
+            100% { text-shadow: 0 0 10px #00e5ff, 0 0 20px #00e5ff; }
+        }
+        .title-glow {
+            animation: pulse-glow 2s infinite;
+        }
+
+        #game-canvas {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+            /* เอา transform: scaleX(-1); ออก เพื่อไม่ให้ตัวอักษรกลับด้าน */
+        }
+        
+        /* Container for canvas to handle exact mirroring in JS */
+        .canvas-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: #000;
+        }
+    </style>
+
+    <!-- Libraries -->
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose/pose.js" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js" crossorigin="anonymous"></script>
+</head>
+<body class="text-white select-none">
+
+    <!-- Main Menu UI -->
+    <div id="main-menu" class="absolute inset-0 z-50 flex flex-col items-center justify-center bg-darkBase bg-[url('https://www.transparenttextures.com/patterns/stardust.png')]">
+        <div class="glass-panel p-8 md:p-12 rounded-3xl max-w-2xl w-[90%] text-center relative overflow-hidden">
+            <!-- Decorative blur blobs -->
+            <div class="absolute -top-20 -left-20 w-40 h-40 bg-neonCyan rounded-full mix-blend-screen filter blur-[80px] opacity-30"></div>
+            <div class="absolute -bottom-20 -right-20 w-40 h-40 bg-neonPink rounded-full mix-blend-screen filter blur-[80px] opacity-30"></div>
+
+            <h1 class="text-5xl md:text-7xl font-bold mb-4 text-transparent bg-clip-text bg-gradient-to-r from-neonCyan to-blue-500 title-glow tracking-wide">
+                ผลคูณหรรษา
+            </h1>
+            <p class="text-gray-300 mb-8 text-lg md:text-xl">เกมแตะผลคูณ Real-Time ตอบคำถามโดยใช้ท่าทางมือผ่านกล้อง!</p>
+            
+            <div class="space-y-6 max-w-sm mx-auto relative z-10">
+                <div>
+                    <label class="block text-left text-sm text-neonCyan mb-2 font-semibold">ชื่อผู้เล่น (เพื่อบันทึกคะแนน)</label>
+                    <input type="text" id="player-name" placeholder="กรอกชื่อของคุณ..." 
+                        class="w-full bg-panelLighter border border-gray-600 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-neonCyan transition-colors">
+                </div>
+                
+                <button onclick="startGame()" class="w-full bg-gradient-to-r from-neonCyan to-blue-600 hover:from-blue-500 hover:to-neonCyan text-white font-bold py-4 rounded-xl text-xl shadow-[0_0_15px_rgba(0,229,255,0.5)] transform hover:scale-105 transition-all">
+                    ▶ เริ่มเกม
+                </button>
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <button onclick="openSettings()" class="bg-panelLighter hover:bg-gray-700 border border-gray-600 text-white font-medium py-3 rounded-xl flex items-center justify-center gap-2 transition-colors">
+                        ⚙️ ตั้งค่า (ครู)
+                    </button>
+                    <button onclick="openLeaderboard()" class="bg-panelLighter hover:bg-gray-700 border border-gray-600 text-white font-medium py-3 rounded-xl flex items-center justify-center gap-2 transition-colors">
+                        🏆 กระดานผู้นำ
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Credit -->
+        <div class="absolute bottom-4 text-center text-xs text-gray-500 max-w-md px-4">
+            นายวรพันธ์ บัวผัน ครูโรงเรียนสุเหร่าคลองหนึ่ง(มานะราษฎร์บำรุง) เขตคลองสามวา กรุงเทพมหานคร
+        </div>
+    </div>
+
+    <!-- Teacher Settings Modal -->
+    <div id="settings-modal" class="hidden absolute inset-0 z-[60] bg-black bg-opacity-80 flex items-center justify-center p-4">
+        <div class="bg-[#161b26] border border-gray-700 rounded-3xl w-full max-w-2xl max-h-[95vh] overflow-y-auto shadow-2xl">
+            <div class="p-6 md:p-8 space-y-6">
+                <!-- Header -->
+                <div class="flex items-center gap-3 border-b border-gray-700 pb-4">
+                    <span class="text-3xl text-neonCyan">⚙️</span>
+                    <h2 class="text-2xl font-bold text-neonCyan tracking-wide">ตั้งค่าโหมดครู</h2>
+                </div>
+
+                <!-- Mode Selection -->
+                <div class="space-y-3">
+                    <label class="block text-white font-semibold">โหมดการเล่น</label>
+                    <div class="grid grid-cols-2 gap-4">
+                        <button id="btn-mode-time" onclick="setMode('time')" class="setting-btn border rounded-xl py-3 flex items-center justify-center gap-2 font-medium transition-colors setting-active">
+                            ⏱️ แข่งขันเวลา
+                        </button>
+                        <button id="btn-mode-survival" onclick="setMode('survival')" class="setting-btn border rounded-xl py-3 flex items-center justify-center gap-2 font-medium transition-colors setting-inactive">
+                            ❤️ เอาชีวิตรอด
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Time Selection -->
+                <div class="space-y-3" id="time-settings">
+                    <label class="block text-white font-semibold" id="time-label">เวลาแข่งขันทั้งหมด (วินาที)</label>
+                    <div class="grid grid-cols-4 gap-2 md:gap-4" id="time-options-container">
+                        <!-- Filled by JS -->
+                    </div>
+                </div>
+
+                <!-- Difficulty -->
+                <div class="space-y-3">
+                    <label class="block text-white font-semibold">ความยาก</label>
+                    <div class="grid grid-cols-3 gap-3 md:gap-4">
+                        <button id="btn-diff-easy" onclick="setDifficulty('easy')" class="diff-btn border rounded-xl py-2 flex flex-col items-center justify-center transition-colors setting-inactive">
+                            <span class="font-medium">ง่าย</span>
+                            <span class="text-xs opacity-70">(แม่ 2-4)</span>
+                        </button>
+                        <button id="btn-diff-medium" onclick="setDifficulty('medium')" class="diff-btn border rounded-xl py-2 flex flex-col items-center justify-center transition-colors setting-active">
+                            <span class="font-medium">ปานกลาง</span>
+                            <span class="text-xs opacity-70">(แม่ 4-6)</span>
+                        </button>
+                        <button id="btn-diff-hard" onclick="setDifficulty('hard')" class="diff-btn border rounded-xl py-2 flex flex-col items-center justify-center transition-colors setting-inactive">
+                            <span class="font-medium">ยาก</span>
+                            <span class="text-xs opacity-70">(แม่ 7-12)</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Sensitivity Slider -->
+                <div class="space-y-3">
+                    <div class="flex justify-between text-white font-semibold">
+                        <label>ระยะสัมผัสลูกโป่ง (Sensitivity)</label>
+                    </div>
+                    <input type="range" id="sensitivity-slider" min="30" max="150" value="80" class="w-full">
+                    <div class="flex justify-between text-xs text-gray-400">
+                        <span>แตะยาก (แม่นยำ)</span>
+                        <span>แตะง่าย (วงกว้าง)</span>
+                    </div>
+                </div>
+
+                <!-- Color Picker -->
+                <div class="space-y-3">
+                    <label class="block text-white font-semibold">สีลูกโป่งคำตอบ</label>
+                    <input type="color" id="balloon-color" value="#00e5ff" class="w-16 h-10 rounded cursor-pointer bg-transparent border-0 p-0">
+                </div>
+
+                <!-- Actions -->
+                <div class="pt-6 grid grid-cols-2 gap-4">
+                    <button onclick="closeSettings()" class="bg-[#334155] hover:bg-[#475569] text-white font-bold py-4 rounded-xl text-lg transition-colors">
+                        ยกเลิก
+                    </button>
+                    <button onclick="saveSettings()" class="bg-neonCyan hover:bg-[#00c8e6] text-black font-bold py-4 rounded-xl text-lg transition-colors">
+                        บันทึก
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Leaderboard Modal -->
+    <div id="leaderboard-modal" class="hidden absolute inset-0 z-[60] bg-black bg-opacity-80 flex items-center justify-center p-4">
+        <div class="glass-panel border-neonCyan rounded-3xl w-full max-w-lg p-6 relative">
+            <button onclick="closeLeaderboard()" class="absolute top-4 right-4 text-gray-400 hover:text-white text-2xl">&times;</button>
+            <h2 class="text-3xl font-bold text-center text-neonCyan mb-6">🏆 กระดานผู้นำ Top 10</h2>
+            
+            <div class="flex justify-center gap-4 mb-4">
+                <button onclick="renderLeaderboard('time')" id="lb-tab-time" class="px-4 py-2 rounded-lg font-bold bg-neonCyan text-black">แข่งขันเวลา</button>
+                <button onclick="renderLeaderboard('survival')" id="lb-tab-survival" class="px-4 py-2 rounded-lg font-bold bg-panelLighter text-white">เอาชีวิตรอด</button>
+            </div>
+
+            <div class="bg-black bg-opacity-40 rounded-xl p-2 h-64 overflow-y-auto" id="leaderboard-list">
+                <!-- Injected via JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Game Container (Webcam & Canvas) -->
+    <div id="game-container" class="hidden absolute inset-0 z-10 bg-black">
+        <!-- Video element is hidden, used for MediaPipe processing -->
+        <video id="webcam-video" class="hidden" autoplay playsinline></video>
+        
+        <!-- Canvas for rendering everything (mirrored video, UI, logic) -->
+        <div class="canvas-container" id="canvas-wrapper">
+            <canvas id="game-canvas"></canvas>
+        </div>
+
+        <!-- In-game UI Overlay Layer (HTML based for easy interaction) -->
+        <div class="absolute top-0 left-0 w-full h-full pointer-events-none p-4 md:p-6 flex flex-col justify-between z-20">
+            <div class="flex justify-between items-start w-full">
+                <button onclick="exitGame()" class="pointer-events-auto bg-black bg-opacity-50 hover:bg-opacity-80 border border-gray-600 text-white px-4 py-2 rounded-full flex items-center gap-2 backdrop-blur-sm transition-all shadow-lg">
+                    🏠 หน้าหลัก
+                </button>
+                
+                <!-- Status Bar (Moved to Top Right) -->
+                <div class="pointer-events-auto glass-panel px-6 py-3 rounded-2xl flex gap-6 text-xl font-bold text-center border-neonCyan shadow-[0_0_15px_rgba(0,229,255,0.3)]">
+                    <div>
+                        <span class="text-gray-400 text-sm block">คะแนน</span>
+                        <span id="ui-score" class="text-neonCyan text-4xl">0</span>
+                    </div>
+                    <div class="w-px bg-gray-600"></div>
+                    <div>
+                        <span class="text-gray-400 text-sm block">เวลา</span>
+                        <span id="ui-time" class="text-neonPink text-4xl">60</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Loading overlay for AI -->
+        <div id="ai-loading" class="absolute inset-0 z-50 bg-black bg-opacity-80 flex flex-col items-center justify-center">
+            <div class="w-16 h-16 border-4 border-neonCyan border-t-transparent rounded-full animate-spin mb-4"></div>
+            <p class="text-neonCyan text-xl font-bold animate-pulse">กำลังโหลด AI จับการเคลื่อนไหว...</p>
+            <p class="text-gray-400 text-sm mt-2">กรุณาอนุญาตการเข้าถึงกล้องและยืนให้ห่างจากกล้องพอประมาณ</p>
+        </div>
+    </div>
+
+    <!-- Game Over Screen -->
+    <div id="game-over-screen" class="hidden absolute inset-0 z-50 bg-black bg-opacity-90 flex items-center justify-center p-4">
+        <div class="glass-panel p-8 md:p-12 rounded-3xl max-w-xl w-full text-center border-neonCyan relative overflow-hidden text-white shadow-[0_0_30px_rgba(0,229,255,0.2)]">
+            <h1 class="text-5xl font-bold mb-8 text-neonCyan title-glow">สรุปผลการเล่น</h1>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <div class="bg-panelBase p-4 rounded-2xl border border-gray-700 flex flex-col items-center">
+                    <span class="text-4xl mb-2">🏆</span>
+                    <span class="text-gray-400 text-sm">คะแนนรวม</span>
+                    <span class="text-3xl font-bold text-yellow-400" id="result-score">0</span>
+                </div>
+                <div class="bg-panelBase p-4 rounded-2xl border border-gray-700 flex flex-col items-center">
+                    <span class="text-4xl mb-2">🏃</span>
+                    <span class="text-gray-400 text-sm">แตะสำเร็จ</span>
+                    <span class="text-3xl font-bold text-green-400" id="result-touches">0 ครั้ง</span>
+                </div>
+                <div class="bg-panelBase p-4 rounded-2xl border border-gray-700 flex flex-col items-center">
+                    <span class="text-4xl mb-2">⚡</span>
+                    <span class="text-gray-400 text-sm">เวลาเฉลี่ย/ข้อ</span>
+                    <span class="text-3xl font-bold text-neonPink" id="result-avg-time">0s</span>
+                </div>
+            </div>
+            
+            <div class="flex flex-col sm:flex-row justify-center gap-4">
+                <button onclick="returnToMenu()" class="bg-panelLighter hover:bg-gray-700 text-white font-bold py-3 px-8 rounded-xl transition-colors">
+                    กลับหน้าหลัก
+                </button>
+                <button onclick="startGame()" class="bg-neonCyan hover:bg-[#00c8e6] text-black font-bold py-3 px-8 rounded-xl transition-colors shadow-[0_0_15px_rgba(0,229,255,0.5)]">
+                    เล่นอีกครั้ง
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- State Management ---
+        const GameState = {
+            MENU: 0,
+            PLAYING: 1,
+            GAMEOVER: 2
+        };
+
+        const config = {
+            mode: 'time', // 'time' or 'survival'
+            timeLimit: { time: 60, survival: 10 },
+            difficulty: 'medium',
+            sensitivity: 80,
+            balloonColor: '#00e5ff'
+        };
+
+        let state = {
+            currentState: GameState.MENU,
+            playerName: '',
+            score: 0,
+            timeLeft: 0,
+            questionCount: 0,
+            successfulTouches: 0,
+            startTime: 0,
+            totalPlayTime: 0,
+            
+            // Interaction logic
+            hoveredBalloonIndex: -1,
+            hoverProgress: 0, // 0 to 1
+            cooldownTimer: 0,
+            
+            // Question data
+            currentQ: { num1: 0, num2: 0, answer: 0, isBonus: false },
+            balloons: [], // Array of {x, y, r, val, isCorrect, baseOffset}
+            
+            // Hand tracking
+            hands: [] // Array of {x, y}
+        };
+
+        const hoverTimeRequired = 0.8; // seconds
+        const cooldownTimeRequired = 1.0; // seconds
+
+        // Settings Data
+        const timeOptionsData = {
+            time: [30, 60, 90, 120],
+            survival: [5, 10, 15, 20]
+        };
+
+        // --- Audio System (Tone.js) ---
+        let synth, noiseSynth, metalSynth;
+        let isAudioInit = false;
+
+        function initAudio() {
+            if (isAudioInit) return;
+            try {
+                synth = new Tone.PolySynth(Tone.Synth, {
+                    oscillator: { type: 'sine' }
+                }).toDestination();
+                
+                noiseSynth = new Tone.NoiseSynth({
+                    noise: { type: 'white' },
+                    envelope: { attack: 0.05, decay: 0.1, sustain: 0, release: 0.1 }
+                }).toDestination();
+
+                metalSynth = new Tone.MetalSynth({
+                    frequency: 200, envelope: { attack: 0.001, decay: 0.1, release: 0.01 },
+                    harmonicity: 5.1, modulationIndex: 32, resonance: 4000, octaves: 1.5
+                }).toDestination();
+
+                Tone.start();
+                isAudioInit = true;
+            } catch(e) { console.warn("Audio init failed:", e); }
+        }
+
+        function playSound(type) {
+            if (!isAudioInit) return;
+            const now = Tone.now();
+            switch(type) {
+                case 'hover':
+                    // Electric charging sound
+                    synth.triggerAttackRelease("C5", "8n", now, 0.1);
+                    break;
+                case 'shock':
+                    // Lightning strike
+                    noiseSynth.triggerAttackRelease("16n");
+                    metalSynth.triggerAttackRelease("16n");
+                    break;
+                case 'correct':
+                    synth.triggerAttackRelease(["C4", "E4", "G4", "C5"], "4n");
+                    break;
+                case 'wrong':
+                    synth.triggerAttackRelease(["C3", "Eb3", "Gb3"], "4n");
+                    break;
+                case 'bonus':
+                    synth.triggerAttackRelease(["G4", "B4", "D5", "G5"], "2n");
+                    break;
+            }
+        }
+
+        // --- DOM Elements ---
+        const canvas = document.getElementById('game-canvas');
+        const ctx = canvas.getContext('2d');
+        const video = document.getElementById('webcam-video');
+        const uiScore = document.getElementById('ui-score');
+        const uiTime = document.getElementById('ui-time');
+        
+        let lastTime = 0;
+        let animationFrameId;
+
+        // --- STREAMING_CHUNK:MediaPipe Pose Setup... ---
+        let pose;
+        let camera;
+        let isCameraReady = false;
+
+        async function initMediaPipe() {
+            if(pose) return; // Already initialized
+
+            pose = new Pose({locateFile: (file) => {
+                return `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}`;
+            }});
+
+            pose.setOptions({
+                modelComplexity: 1, // 0 is faster, 1 is better accuracy
+                smoothLandmarks: true,
+                enableSegmentation: false,
+                smoothSegmentation: false,
+                minDetectionConfidence: 0.6,
+                minTrackingConfidence: 0.6
+            });
+
+            pose.onResults(onPoseResults);
+
+            try {
+                camera = new Camera(video, {
+                    onFrame: async () => {
+                        if(state.currentState === GameState.PLAYING) {
+                            await pose.send({image: video});
+                        }
+                    },
+                    width: 1280,
+                    height: 720
+                });
+                await camera.start();
+                isCameraReady = true;
+                document.getElementById('ai-loading').classList.add('hidden');
+            } catch (error) {
+                console.error("Camera access denied or failed", error);
+                alert("กรุณาอนุญาตการใช้งานกล้อง เพื่อเล่นเกม");
+            }
+        }
+
+        function onPoseResults(results) {
+            state.hands = [];
+            if (results.poseLandmarks) {
+                // Extract Left (15, 19, 21) and Right (16, 20, 22) wrists/index fingers
+                // Note: Landmarks are 0-1 relative to image.
+                // WE MUST MIRROR THE X COORDINATE HERE so logic matches the mirrored canvas.
+                const extractHand = (index) => {
+                    const lm = results.poseLandmarks[index];
+                    if (lm && lm.visibility > 0.5) {
+                        state.hands.push({
+                            x: 1 - lm.x, // MIRROR LOGIC
+                            y: lm.y
+                        });
+                    }
+                };
+                
+                // Using index fingers for pointing
+                extractHand(19); // Left Index
+                extractHand(20); // Right Index
+                
+                // Fallback to wrists if index not visible well
+                if(state.hands.length === 0) {
+                    extractHand(15);
+                    extractHand(16);
+                }
+            }
+        }
+
+        // --- STREAMING_CHUNK:Game Logic (Questions, Layouts)... ---
+        function generateQuestion() {
+            state.questionCount++;
+            
+            // Check Bonus Round
+            state.currentQ.isBonus = (state.questionCount % 10 === 0);
+            
+            let min, max;
+            if (state.currentQ.isBonus) {
+                min = 7; max = 12;
+                playSound('bonus');
+            } else {
+                switch(config.difficulty) {
+                    case 'easy': min = 2; max = 4; break;
+                    case 'medium': min = 4; max = 6; break;
+                    case 'hard': min = 7; max = 12; break;
+                }
+            }
+            
+            // Generate numbers
+            state.currentQ.num1 = Math.floor(Math.random() * (max - min + 1)) + min;
+            let multMin = state.currentQ.isBonus ? 7 : 2;
+            let multMax = state.currentQ.isBonus ? 12 : 9;
+            if(config.difficulty === 'hard') multMax = 12;
+            
+            state.currentQ.num2 = Math.floor(Math.random() * (multMax - multMin + 1)) + multMin;
+            state.currentQ.answer = state.currentQ.num1 * state.currentQ.num2;
+            
+            // Generate Fake Answers
+            let fakes = new Set();
+            while(fakes.size < 3) {
+                let offset = Math.floor(Math.random() * 5) + 1;
+                let sign = Math.random() > 0.5 ? 1 : -1;
+                let fake = state.currentQ.answer + (offset * sign);
+                if(fake > 0 && fake !== state.currentQ.answer) {
+                    fakes.add(fake);
+                }
+            }
+            
+            let options = Array.from(fakes);
+            options.push(state.currentQ.answer);
+            options.sort(() => Math.random() - 0.5); // Shuffle
+            
+            // Setup Balloons Layout
+            state.balloons = [];
+            const cols = 4;
+            const yPos = 0.65; // 65% down the screen
+            const radius = 0.12; // ขยายรัศมีลูกโป่งเป็น 0.12 เพื่อรองรับตัวเลขขนาดใหญ่ (เดิม 0.08)
+            
+            for(let i=0; i<cols; i++) {
+                state.balloons.push({
+                    x: (i + 1) * (1 / (cols + 1)), // Evenly space: 0.2, 0.4, 0.6, 0.8
+                    y: yPos,
+                    baseY: yPos,
+                    r: radius,
+                    val: options[i],
+                    isCorrect: options[i] === state.currentQ.answer,
+                    floatOffset: Math.random() * Math.PI * 2, // Random start phase
+                    color: config.balloonColor
+                });
+            }
+
+            // Reset survival timer if needed, but not on very first init to avoid instant death
+            if(config.mode === 'survival' && state.questionCount > 1) {
+                state.timeLeft = config.timeLimit.survival;
+            }
+        }
+
+        // --- STREAMING_CHUNK:Canvas Rendering Engine... ---
+        function resizeCanvas() {
+            const wrapper = document.getElementById('canvas-wrapper');
+            canvas.width = wrapper.clientWidth;
+            canvas.height = wrapper.clientHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+
+        function drawGame(dt) {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // 1. Draw Mirrored Video Background Correctly
+            if (video.readyState >= 2) { // HAVE_CURRENT_DATA
+                ctx.save();
+                
+                // กระจกเงา (Mirror) เฉพาะวิดีโอ โดยให้จุดศูนย์กลางอยู่ตรงกลางหน้าจอ
+                ctx.translate(canvas.width / 2, canvas.height / 2);
+                ctx.scale(-1, 1);
+                
+                // Draw video full cover
+                const ratio = Math.max(canvas.width / video.videoWidth, canvas.height / video.videoHeight);
+                const drawW = video.videoWidth * ratio;
+                const drawH = video.videoHeight * ratio;
+                
+                ctx.drawImage(video, -drawW / 2, -drawH / 2, drawW, drawH);
+                ctx.restore();
+                
+                // Darken video slightly for readability
+                ctx.fillStyle = 'rgba(0,0,0,0.4)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+            }
+
+            // 2. Draw Question Box
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            
+            // Glow effect for text
+            ctx.shadowColor = 'black';
+            ctx.shadowBlur = 15;
+            ctx.lineWidth = 15; // เพิ่มความหนาขอบตัวอักษร
+            ctx.strokeStyle = '#000';
+            
+            const qY = canvas.height * 0.25;
+            const qText = `${state.currentQ.num1} × ${state.currentQ.num2}`;
+            
+            // ลดขนาดตัวเลขคำถามลง 30% (จากสูงสุด 360px เหลือ 252px)
+            const qFontSize = Math.min(252, canvas.width * 0.175);
+            ctx.font = `bold ${qFontSize}px Kanit`;
+            ctx.strokeText(qText, canvas.width/2, qY);
+            ctx.fillStyle = '#fff';
+            ctx.fillText(qText, canvas.width/2, qY);
+
+            // Bonus Badge
+            if(state.currentQ.isBonus) {
+                ctx.save();
+                // ปรับระยะป้ายโบนัสตามขนาดคำถามใหม่
+                ctx.translate(canvas.width/2 + (qFontSize * 0.7), qY + 30);
+                ctx.rotate(-35 * Math.PI / 180);
+                ctx.fillStyle = '#ff0055';
+                ctx.shadowColor = '#ff0055';
+                ctx.shadowBlur = 15;
+                ctx.fillRect(-80, -25, 160, 50);
+                ctx.fillStyle = 'white';
+                ctx.font = 'bold 24px Kanit';
+                ctx.shadowBlur = 0;
+                ctx.fillText('โบนัส x2!', 0, 0);
+                ctx.restore();
+            }
+
+            // Cooldown Overlay
+            if(state.cooldownTimer > 0) {
+                const coolFontSize = Math.min(100, canvas.width * 0.1);
+                ctx.font = `bold ${coolFontSize}px Kanit`;
+                ctx.fillStyle = '#fcd34d'; // Amber
+                ctx.strokeText("⏳ เตรียมตัว...", canvas.width/2, canvas.height/2);
+                ctx.fillText("⏳ เตรียมตัว...", canvas.width/2, canvas.height/2);
+            }
+
+            // 3. Draw Balloons
+            const timeSec = performance.now() / 1000;
+            const pxSens = (config.sensitivity / 100) * (canvas.width * 0.05); // dynamic sensitivity
+            
+            state.balloons.forEach((b, index) => {
+                // Float animation
+                b.y = b.baseY + Math.sin(timeSec * 2 + b.floatOffset) * 0.02;
+                
+                const bx = b.x * canvas.width;
+                const by = b.y * canvas.height;
+                const br = b.r * Math.min(canvas.width, canvas.height);
+
+                // Draw Balloon Body
+                ctx.beginPath();
+                ctx.arc(bx, by, br, 0, Math.PI * 2);
+                
+                if (state.cooldownTimer > 0) {
+                    ctx.fillStyle = '#4b5563'; // Gray during cooldown
+                    ctx.shadowColor = 'transparent';
+                } else {
+                    ctx.fillStyle = b.color;
+                    ctx.shadowColor = b.color;
+                    ctx.shadowBlur = 20;
+                }
+                
+                ctx.fill();
+                
+                // Draw inner highlight (glassy feel)
+                ctx.beginPath();
+                ctx.arc(bx - br*0.3, by - br*0.3, br*0.2, 0, Math.PI*2);
+                ctx.fillStyle = 'rgba(255,255,255,0.3)';
+                ctx.shadowBlur = 0;
+                ctx.fill();
+
+                // Draw Value
+                // เพิ่มขนาดตัวเลขคำตอบ 3 เท่า (จากเดิม 60px เป็น 180px โดยคำนวณให้พอดีลูกโป่ง)
+                const ansFontSize = Math.min(180, br * 1.2); 
+                ctx.font = `bold ${ansFontSize}px Kanit`;
+                ctx.fillStyle = '#000';
+                ctx.fillText(b.val, bx, by);
+                
+                // Draw Hover / Selection effect
+                if(index === state.hoveredBalloonIndex && state.cooldownTimer <= 0) {
+                    // Draw Progress Ring
+                    ctx.beginPath();
+                    ctx.arc(bx, by, br + 15, -Math.PI/2, (-Math.PI/2) + (Math.PI * 2 * state.hoverProgress));
+                    ctx.strokeStyle = '#fff';
+                    ctx.lineWidth = 10;
+                    ctx.lineCap = 'round';
+                    ctx.stroke();
+
+                    // Lightning Effect inside
+                    if(Math.random() > 0.5) {
+                        ctx.beginPath();
+                        ctx.moveTo(bx, by);
+                        ctx.lineTo(bx + (Math.random()-0.5)*br, by + (Math.random()-0.5)*br);
+                        ctx.strokeStyle = '#fff';
+                        ctx.lineWidth = 3;
+                        ctx.stroke();
+                    }
+                }
+            });
+
+            // 4. Draw Hand Tracking Pointers
+            ctx.shadowBlur = 0;
+            state.hands.forEach(hand => {
+                const hx = hand.x * canvas.width;
+                const hy = hand.y * canvas.height;
+                
+                ctx.beginPath();
+                ctx.arc(hx, hy, 15, 0, Math.PI * 2);
+                ctx.fillStyle = '#ff0055';
+                ctx.fill();
+                ctx.strokeStyle = '#fff';
+                ctx.lineWidth = 3;
+                ctx.stroke();
+                
+                // Sensitivity radius hint
+                ctx.beginPath();
+                ctx.arc(hx, hy, pxSens, 0, Math.PI*2);
+                ctx.strokeStyle = 'rgba(255, 0, 85, 0.3)';
+                ctx.stroke();
+            });
+        }
+
+        // --- STREAMING_CHUNK:Main Game Loop & Interaction Logic... ---
+        function updateLogic(dt) {
+            if(state.currentState !== GameState.PLAYING) return;
+
+            // Timer Logic
+            if(state.cooldownTimer <= 0) {
+                state.timeLeft -= dt;
+                
+                // Update UI Timer visually
+                uiTime.innerText = Math.ceil(state.timeLeft);
+                if(state.timeLeft <= 5) uiTime.classList.add('animate-pulse', 'text-red-500');
+                else uiTime.classList.remove('animate-pulse', 'text-red-500');
+
+                if (state.timeLeft <= 0) {
+                    endGame();
+                    return;
+                }
+            }
+
+            // Cooldown Logic
+            if(state.cooldownTimer > 0) {
+                state.cooldownTimer -= dt;
+                if(state.cooldownTimer <= 0) {
+                    generateQuestion(); // Pull next question after cooldown
+                }
+                return; // Skip interaction during cooldown
+            }
+
+            // Interaction Logic (Hands touching balloons)
+            let currentHoverIndex = -1;
+            const pxSens = (config.sensitivity / 100) * (canvas.width * 0.05);
+
+            for (let i = 0; i < state.balloons.length; i++) {
+                const b = state.balloons[i];
+                const bx = b.x * canvas.width;
+                const by = b.y * canvas.height;
+                const br = b.r * Math.min(canvas.width, canvas.height);
+                
+                // Check collision with any hand
+                for(let hand of state.hands) {
+                    const hx = hand.x * canvas.width;
+                    const hy = hand.y * canvas.height;
+                    const dist = Math.hypot(bx - hx, by - hy);
+                    
+                    if (dist < br + pxSens) {
+                        currentHoverIndex = i;
+                        break;
+                    }
+                }
+                if(currentHoverIndex !== -1) break; // Found a hover, stop checking
+            }
+
+            // Handle Hover Timer
+            if (currentHoverIndex !== -1) {
+                if (state.hoveredBalloonIndex !== currentHoverIndex) {
+                    // Started hovering a new balloon
+                    state.hoveredBalloonIndex = currentHoverIndex;
+                    state.hoverProgress = 0;
+                    if(state.hoverProgress < 0.1) playSound('hover'); // Play sound once at start
+                } else {
+                    // Continue hovering
+                    state.hoverProgress += dt / hoverTimeRequired;
+                    if (state.hoverProgress >= 1) {
+                        handleAnswer(currentHoverIndex);
+                    }
+                }
+            } else {
+                // No hover
+                state.hoveredBalloonIndex = -1;
+                state.hoverProgress = 0;
+            }
+        }
+
+        function handleAnswer(index) {
+            const selected = state.balloons[index];
+            state.hoverProgress = 0;
+            state.hoveredBalloonIndex = -1;
+            state.cooldownTimer = cooldownTimeRequired;
+            
+            playSound('shock');
+
+            if (selected.isCorrect) {
+                playSound('correct');
+                let points = state.currentQ.isBonus ? 2 : 1;
+                state.score += points;
+                state.successfulTouches++;
+            } else {
+                playSound('wrong');
+                state.score -= 1;
+                if(config.mode === 'survival') {
+                    endGame(); // Instant death in survival mode
+                    return;
+                }
+            }
+            
+            uiScore.innerText = state.score;
+        }
+
+        function gameLoop(timestamp) {
+            if (!lastTime) lastTime = timestamp;
+            const dt = (timestamp - lastTime) / 1000; // Delta time in seconds
+            lastTime = timestamp;
+
+            updateLogic(dt);
+            drawGame(dt);
+
+            if(state.currentState === GameState.PLAYING) {
+                animationFrameId = requestAnimationFrame(gameLoop);
+            }
+        }
+
+        // --- STREAMING_CHUNK:Game Flow Control (Start, End, Reset)... ---
+        async function startGame() {
+            const nameInput = document.getElementById('player-name').value.trim();
+            if(!nameInput) {
+                alert("กรุณากรอกชื่อก่อนเล่นเกม!");
+                return;
+            }
+            state.playerName = nameInput;
+
+            initAudio();
+            document.getElementById('main-menu').classList.add('hidden');
+            document.getElementById('game-over-screen').classList.add('hidden');
+            document.getElementById('game-container').classList.remove('hidden');
+            
+            if(!isCameraReady) {
+                document.getElementById('ai-loading').classList.remove('hidden');
+                await initMediaPipe();
+            }
+
+            resizeCanvas();
+
+            // Reset State
+            state.currentState = GameState.PLAYING;
+            state.score = 0;
+            state.questionCount = 0;
+            state.successfulTouches = 0;
+            state.startTime = Date.now();
+            state.cooldownTimer = 0;
+            state.hoveredBalloonIndex = -1;
+            
+            uiScore.innerText = state.score;
+            
+            if(config.mode === 'time') {
+                state.timeLeft = config.timeLimit.time;
+            } else {
+                state.timeLeft = config.timeLimit.survival;
+            }
+            
+            generateQuestion();
+            
+            lastTime = performance.now();
+            if(animationFrameId) cancelAnimationFrame(animationFrameId);
+            animationFrameId = requestAnimationFrame(gameLoop);
+        }
+
+        function endGame() {
+            state.currentState = GameState.GAMEOVER;
+            cancelAnimationFrame(animationFrameId);
+            
+            state.totalPlayTime = (Date.now() - state.startTime) / 1000;
+            let avgTime = state.successfulTouches > 0 ? (state.totalPlayTime / state.successfulTouches).toFixed(1) : 0;
+            
+            // Update UI
+            document.getElementById('result-score').innerText = state.score;
+            document.getElementById('result-touches').innerText = `${state.successfulTouches} ครั้ง`;
+            document.getElementById('result-avg-time').innerText = `${avgTime}s`;
+            
+            document.getElementById('game-over-screen').classList.remove('hidden');
+            
+            saveScore();
+        }
+
+        function exitGame() {
+            state.currentState = GameState.MENU;
+            cancelAnimationFrame(animationFrameId);
+            document.getElementById('game-container').classList.add('hidden');
+            document.getElementById('game-over-screen').classList.add('hidden');
+            document.getElementById('main-menu').classList.remove('hidden');
+        }
+        
+        function returnToMenu() {
+            exitGame();
+        }
+
+        // --- STREAMING_CHUNK:Teacher Settings Modal Logic... ---
+        function openSettings() {
+            document.getElementById('settings-modal').classList.remove('hidden');
+            updateSettingsUI();
+        }
+        
+        function closeSettings() {
+            document.getElementById('settings-modal').classList.add('hidden');
+        }
+
+        function setMode(mode) {
+            config.mode = mode;
+            updateSettingsUI();
+        }
+
+        function setDifficulty(diff) {
+            config.difficulty = diff;
+            updateSettingsUI();
+        }
+
+        function renderTimeOptions() {
+            const container = document.getElementById('time-options-container');
+            const label = document.getElementById('time-label');
+            container.innerHTML = '';
+            
+            let options = [];
+            let currentSelected = 0;
+
+            if(config.mode === 'time') {
+                label.innerText = 'เวลาแข่งขันทั้งหมด (วินาที)';
+                options = timeOptionsData.time;
+                currentSelected = config.timeLimit.time;
+            } else {
+                label.innerText = 'เวลาจำกัดต่อข้อ (วินาที)';
+                options = timeOptionsData.survival;
+                currentSelected = config.timeLimit.survival;
+            }
+
+            // Ensure valid selection if switched
+            if(!options.includes(currentSelected)) {
+                currentSelected = options[1]; // default to 2nd option
+                if(config.mode === 'time') config.timeLimit.time = currentSelected;
+                else config.timeLimit.survival = currentSelected;
+            }
+
+            options.forEach(t => {
+                const btn = document.createElement('button');
+                btn.innerText = t;
+                btn.className = `border rounded-xl py-2 font-bold transition-colors ${t === currentSelected ? 'setting-active' : 'setting-inactive'}`;
+                btn.onclick = () => {
+                    if(config.mode === 'time') config.timeLimit.time = t;
+                    else config.timeLimit.survival = t;
+                    renderTimeOptions(); // Re-render to update active state
+                };
+                container.appendChild(btn);
+            });
+        }
+
+        function updateSettingsUI() {
+            // Mode buttons
+            document.getElementById('btn-mode-time').className = `setting-btn border rounded-xl py-3 flex items-center justify-center gap-2 font-medium transition-colors ${config.mode === 'time' ? 'setting-active' : 'setting-inactive'}`;
+            document.getElementById('btn-mode-survival').className = `setting-btn border rounded-xl py-3 flex items-center justify-center gap-2 font-medium transition-colors ${config.mode === 'survival' ? 'setting-active' : 'setting-inactive'}`;
+
+            // Diff buttons
+            ['easy', 'medium', 'hard'].forEach(d => {
+                const el = document.getElementById(`btn-diff-${d}`);
+                el.classList.remove('setting-active', 'setting-inactive');
+                el.classList.add(config.difficulty === d ? 'setting-active' : 'setting-inactive');
+            });
+
+            renderTimeOptions();
+
+            // Slider & Color
+            document.getElementById('sensitivity-slider').value = config.sensitivity;
+            document.getElementById('balloon-color').value = config.balloonColor;
+        }
+
+        function saveSettings() {
+            config.sensitivity = parseInt(document.getElementById('sensitivity-slider').value);
+            config.balloonColor = document.getElementById('balloon-color').value;
+            closeSettings();
+        }
+
+        // --- STREAMING_CHUNK:Leaderboard Logic... ---
+        function openLeaderboard() {
+            document.getElementById('leaderboard-modal').classList.remove('hidden');
+            renderLeaderboard('time');
+        }
+
+        function closeLeaderboard() {
+            document.getElementById('leaderboard-modal').classList.add('hidden');
+        }
+
+        function saveScore() {
+            if(state.score <= 0) return;
+            
+            let key = `mmath_leaderboard_${config.mode}`;
+            let data = JSON.parse(localStorage.getItem(key)) || [];
+            
+            data.push({
+                name: state.playerName,
+                score: state.score,
+                date: new Date().toLocaleDateString('th-TH')
+            });
+            
+            // Sort descending by score
+            data.sort((a, b) => b.score - a.score);
+            data = data.slice(0, 10); // Keep top 10
+            
+            localStorage.setItem(key, JSON.stringify(data));
+        }
+
+        function renderLeaderboard(mode) {
+            // Update tabs
+            const btnTime = document.getElementById('lb-tab-time');
+            const btnSurv = document.getElementById('lb-tab-survival');
+            
+            if(mode === 'time') {
+                btnTime.className = "px-4 py-2 rounded-lg font-bold bg-neonCyan text-black";
+                btnSurv.className = "px-4 py-2 rounded-lg font-bold bg-panelLighter text-white";
+            } else {
+                btnSurv.className = "px-4 py-2 rounded-lg font-bold bg-neonCyan text-black";
+                btnTime.className = "px-4 py-2 rounded-lg font-bold bg-panelLighter text-white";
+            }
+
+            const list = document.getElementById('leaderboard-list');
+            list.innerHTML = '';
+            
+            let data = JSON.parse(localStorage.getItem(`mmath_leaderboard_${mode}`)) || [];
+            
+            if(data.length === 0) {
+                list.innerHTML = '<div class="text-center text-gray-500 py-8">ยังไม่มีข้อมูลคะแนนในโหมดนี้</div>';
+                return;
+            }
+
+            data.forEach((entry, i) => {
+                let medal = '';
+                if(i === 0) medal = '🥇';
+                else if(i === 1) medal = '🥈';
+                else if(i === 2) medal = '🥉';
+                else medal = `<span class="text-gray-500 w-6 inline-block text-center">${i+1}.</span>`;
+
+                const row = document.createElement('div');
+                row.className = 'flex justify-between items-center p-3 border-b border-gray-700 last:border-0 hover:bg-gray-800 transition-colors rounded-lg';
+                row.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <span class="text-xl w-8 text-center">${medal}</span>
+                        <span class="font-bold text-white text-lg">${entry.name}</span>
+                        <span class="text-xs text-gray-400 ml-2">${entry.date}</span>
+                    </div>
+                    <div class="font-bold text-neonCyan text-xl">${entry.score} <span class="text-xs text-gray-400 font-normal">pts</span></div>
+                `;
+                list.appendChild(row);
+            });
+        }
+
+        // Initialize state UI
+        updateSettingsUI();
+    </script>
+</body>
+</html>
